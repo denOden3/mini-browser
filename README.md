@@ -4,12 +4,13 @@ A lightweight, reusable mini-browser HUD for chat-first roleplaying games.
 
 **Design principle:** Mini displays game websites. It does **not** duplicate the game's inventory, finances, or other source-of-truth data, and it does **not** read ChatGPT narration automatically.
 
-## Current prototype (v0.2)
+## Current prototype (v0.2.1)
 
 - `mini-browser.user.js` — Tampermonkey userscript that overlays ChatGPT.
 - `examples/last-hearth/index.html` — independent, static Last Hearth tracker demo.
 - Three viewing modes: **Full** (embedded website), **Compact** (short game-summary viewport), and **Title only**.
 - The Mini Browser option is injected into the **existing Paths/Mizuhana top HUD switcher menus**. Inactive Mini adds no floating panel. When minimized, Mini uses a single top capsule in the same position as the other HUDs. No changes are made to the Paths or Mizuhana userscripts.
+- On desktop, expanded and compact Mini dock over the **left ChatGPT sidebar**, keeping the composer and narration unobstructed. The title-only capsule remains at the top center. On narrow mobile screens, Mini uses available screen width.
 - Add, rename, remove, and select game-website shortcuts.
 - Website shortcuts persist locally in Tampermonkey.
 - External-link action opens the game website in its own browser tab.
