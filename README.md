@@ -21,7 +21,7 @@ The Last Hearth is the **first test case**. Mizuhana and Paths to Immortality ar
 1. Install and enable the **Tampermonkey** browser extension.
 2. Open the raw `mini-browser.user.js` file on GitHub, copy its contents, and create a new Tampermonkey userscript by pasting that code.
 3. Save the userscript and open or reload `https://chatgpt.com/`.
-4. Look for **MINI BROWSER** at the lower-right corner.
+4. With the other HUDs installed, first locate their **top-center HUD capsule**. Mini stays hidden until you choose it, so it won't clutter the screen.
 5. Collapse Paths/Mizuhana to their top capsule (if necessary), then **long-press or right-click the capsule** and select **◈ Mini Browser**. If no other HUD is loaded, Mini provides its own top capsule.
 6. When Mini opens, click **⚙** to set the HTTPS address of a **hosted** tracker website.
 7. Click the Mini title to cycle between Full → Compact → Title only. The **▤** control toggles Compact view directly. In title-only mode, **Mini Browser** appears as a top capsule; long-press/right-click that capsule to switch back to Paths or Mizuhana.
