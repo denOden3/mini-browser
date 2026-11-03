@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Mini Browser — Universal Roleplay HUD
 // @namespace    mini-browser.chat-rpg
-// @version      0.2.1
+// @version      0.2.2
 // @description  A reusable mini browser for chat-first RPG tracker websites.
 // @updateURL    https://github.com/denOden3/mini-browser/raw/main/mini-browser.user.js
 // @downloadURL  https://github.com/denOden3/mini-browser/raw/main/mini-browser.user.js
@@ -52,12 +52,13 @@
   const css = String.raw`
     #mini-browser-root, #mini-browser-root * { box-sizing:border-box; }
     #mini-browser-root { position:fixed; bottom:16px; left:12px; right:auto; z-index:2147483000;
-      width:min(328px,calc(100vw - 24px)); height:490px; min-width:260px; max-height:75dvh;
+      width:328px; height:490px; min-width:260px; max-width:calc(100vw - 24px);
+      min-height:210px; max-height:calc(100dvh - 32px);
       font:13px/1.4 system-ui,sans-serif; color:#2e2924; background:#faf7f0;
       border:1px solid #a69a87; border-radius:12px; overflow:hidden; display:flex;
-      flex-direction:column; box-shadow:0 10px 28px #14100a44; resize:both; }
-    #mini-browser-root.mb-compact {height:185px!important;resize:none;}
-    #mini-browser-root.mb-bar {height:44px!important;resize:none;}
+      flex-direction:column; box-shadow:0 10px 28px #14100a44; resize:none; }
+    #mini-browser-root.mb-compact {height:185px!important;}
+    #mini-browser-root.mb-bar {height:44px!important;}
     #mini-browser-root button, #mini-browser-root input, #mini-browser-root select {font:inherit;}
     #mini-browser-root button {cursor:pointer;}
     #mini-browser-root .mb-head {display:flex;align-items:center;gap:5px;background:#e9dfcf;
@@ -86,8 +87,37 @@
     #mini-browser-root.mb-bar select, #mini-browser-root.mb-bar .mb-open,
     #mini-browser-root.mb-bar .mb-settings-button {display:none!important;}
     #mini-browser-root.mb-bar .mb-title {flex:1;text-align:left;}
+    /* Drag the right border to resize width or the top border to resize height.
+       The bottom stays docked above the taskbar, so narration stays readable. */
+    #mini-browser-root .mb-resize-width, #mini-browser-root .mb-resize-height {
+      position:absolute;z-index:8;touch-action:none;user-select:none;
+      -webkit-user-select:none;background:transparent;
+    }
+    #mini-browser-root .mb-resize-width {right:0;top:45px;bottom:0;width:13px;cursor:ew-resize;}
+    #mini-browser-root .mb-resize-width::after {
+      content:"";display:block;position:absolute;top:50%;right:4px;
+      height:46px;width:3px;transform:translateY(-50%);
+      border-radius:4px;background:#a9977e;opacity:.8;
+    }
+    #mini-browser-root .mb-resize-height {
+      top:0;left:28px;right:28px;height:9px;cursor:ns-resize;
+    }
+    #mini-browser-root .mb-resize-height::after {
+      content:"";display:block;position:absolute;top:3px;left:50%;
+      width:48px;height:3px;transform:translateX(-50%);
+      border-radius:4px;background:#a9977e;opacity:.85;
+    }
+    #mini-browser-root .mb-resize-width:hover::after,
+    #mini-browser-root .mb-resize-height:hover::after,
+    #mini-browser-root .mb-resize-width:focus-visible::after,
+    #mini-browser-root .mb-resize-height:focus-visible::after {background:#5c4835;}
+    #mini-browser-root.mb-compact .mb-resize-height,
+    #mini-browser-root.mb-bar .mb-resize-width,
+    #mini-browser-root.mb-bar .mb-resize-height {display:none!important;}
+    #mini-browser-root.mb-resizing iframe {pointer-events:none;}
     @media(max-width:600px) {#mini-browser-root {left:8px;right:auto;bottom:8px;
       width:calc(100vw - 16px);height:min(460px,70dvh);min-width:240px;}
+      #mini-browser-root .mb-resize-width,#mini-browser-root .mb-resize-height {display:none!important;}
       #mini-browser-root select {max-width:90px;}}
   `;
   document.head.append(Object.assign(make("style"), { textContent: css }));
@@ -127,8 +157,104 @@
   actions.append(add, store, remove);
   settings.append(nameLabel, urlLabel, actions,
     make("p", "mb-note", "Choose an HTTPS website you trust. Some websites block embedding; ↗ opens them directly. Shortcuts are stored locally in Tampermonkey. No narration or game-state data is collected by Mini."));
-  root.append(header, content, settings);
+  const widthHandle = make("div", "mb-resize-width");
+  widthHandle.title = "Drag left or right to resize Mini Browser";
+  widthHandle.setAttribute("role", "separator");
+  widthHandle.setAttribute("aria-orientation", "vertical");
+  widthHandle.setAttribute("aria-label", "Resize Mini Browser width");
+  widthHandle.tabIndex = 0;
+  const heightHandle = make("div", "mb-resize-height");
+  heightHandle.title = "Drag up or down to resize Mini Browser";
+  heightHandle.setAttribute("role", "separator");
+  heightHandle.setAttribute("aria-orientation", "horizontal");
+  heightHandle.setAttribute("aria-label", "Resize Mini Browser height");
+  heightHandle.tabIndex = 0;
+  root.append(header, content, settings, widthHandle, heightHandle);
   document.body.append(root);
+
+  // Keep the user's chosen window size across reloads and HUD switches.
+  const initialSize = state.windowSize && typeof state.windowSize === "object" ? state.windowSize : {};
+  state.windowSize = {
+    width: Number.isFinite(initialSize.width) ? initialSize.width : 328,
+    height: Number.isFinite(initialSize.height) ? initialSize.height : 490
+  };
+  const clamp = (value, low, high) => Math.max(low, Math.min(high, value));
+  function windowBounds() {
+    return {
+      width: Math.max(260, Math.min(900, window.innerWidth - 24)),
+      height: Math.max(210, window.innerHeight - 32)
+    };
+  }
+  function applyWindowSize() {
+    if (window.innerWidth <= 600) {
+      // Mobile layout uses the available viewport width rather than desktop dimensions.
+      root.style.removeProperty("width");
+      root.style.removeProperty("height");
+      return;
+    }
+    const bounds = windowBounds();
+    root.style.width = clamp(state.windowSize.width, 260, bounds.width) + "px";
+    root.style.height = clamp(state.windowSize.height, 210, bounds.height) + "px";
+  }
+  let drag = null;
+  function startResize(event, dimension) {
+    if (event.button !== 0 || window.innerWidth <= 600 ||
+        state.mode === "bar" || (dimension === "height" && state.mode !== "open")) return;
+    event.preventDefault();
+    event.stopPropagation();
+    const handle = event.currentTarget;
+    drag = {
+      dimension, handle, pointerId: event.pointerId,
+      x: event.clientX, y: event.clientY,
+      width: root.getBoundingClientRect().width,
+      height: root.getBoundingClientRect().height
+    };
+    root.classList.add("mb-resizing");
+    handle.setPointerCapture(event.pointerId);
+  }
+  function moveResize(event) {
+    if (!drag || drag.pointerId !== event.pointerId ||
+        drag.handle !== event.currentTarget) return;
+    const bounds = windowBounds();
+    if (drag.dimension === "width") {
+      const width = clamp(Math.round(drag.width + event.clientX - drag.x), 260, bounds.width);
+      root.style.width = width + "px";
+      state.windowSize.width = width;
+    } else {
+      // Bottom-docked: moving the TOP edge upward increases the window height.
+      const height = clamp(Math.round(drag.height + drag.y - event.clientY), 210, bounds.height);
+      root.style.height = height + "px";
+      state.windowSize.height = height;
+    }
+  }
+  function stopResize(event) {
+    if (!drag || drag.pointerId !== event.pointerId ||
+        drag.handle !== event.currentTarget) return;
+    drag = null;
+    root.classList.remove("mb-resizing");
+    save();
+  }
+  for (const [handle, dimension] of [[widthHandle, "width"], [heightHandle, "height"]]) {
+    handle.addEventListener("pointerdown", event => startResize(event, dimension));
+    handle.addEventListener("pointermove", moveResize);
+    handle.addEventListener("pointerup", stopResize);
+    handle.addEventListener("pointercancel", stopResize);
+    handle.addEventListener("lostpointercapture", stopResize);
+    handle.addEventListener("keydown", event => {
+      const horizontal = dimension === "width";
+      const delta = event.key === (horizontal ? "ArrowRight" : "ArrowUp") ? 20
+        : event.key === (horizontal ? "ArrowLeft" : "ArrowDown") ? -20 : 0;
+      if (!delta || window.innerWidth <= 600) return;
+      event.preventDefault();
+      const bounds = windowBounds();
+      const property = horizontal ? "width" : "height";
+      const min = horizontal ? 260 : 210;
+      state.windowSize[property] = clamp(state.windowSize[property] + delta, min, bounds[property]);
+      applyWindowSize();
+      save();
+    });
+  }
+  window.addEventListener("resize", applyWindowSize);
 
   let editing = null;
   let settingsVisible = false;
@@ -157,6 +283,7 @@
   function render() {
     state.mode = ["open", "compact", "bar"].includes(state.mode) ? state.mode : "open";
     root.className = state.mode === "open" ? "" : "mb-" + state.mode;
+    applyWindowSize();
     title.textContent = (state.mode === "open" ? "▾" : "▸") + " MINI BROWSER";
     compact.textContent = state.mode === "compact" ? "□" : "▤";
     selector.replaceChildren();
