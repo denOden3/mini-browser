@@ -1,8 +1,10 @@
 // ==UserScript==
 // @name         Mini Browser — Universal Roleplay HUD
 // @namespace    mini-browser.chat-rpg
-// @version      0.1.0
+// @version      0.1.1
 // @description  A reusable mini browser for chat-first RPG tracker websites.
+// @updateURL    https://github.com/denOden3/mini-browser/raw/main/mini-browser.user.js
+// @downloadURL  https://github.com/denOden3/mini-browser/raw/main/mini-browser.user.js
 // @match        https://chatgpt.com/*
 // @match        https://chat.openai.com/*
 // @grant        GM_getValue
