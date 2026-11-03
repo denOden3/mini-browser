@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Mini Browser — Universal Roleplay HUD
 // @namespace    mini-browser.chat-rpg
-// @version      0.2.0
+// @version      0.2.1
 // @description  A reusable mini browser for chat-first RPG tracker websites.
 // @updateURL    https://github.com/denOden3/mini-browser/raw/main/mini-browser.user.js
 // @downloadURL  https://github.com/denOden3/mini-browser/raw/main/mini-browser.user.js
@@ -51,8 +51,8 @@
   const currentSite = () => state.sites.find(s => s.id === state.selected);
   const css = String.raw`
     #mini-browser-root, #mini-browser-root * { box-sizing:border-box; }
-    #mini-browser-root { position:fixed; bottom:16px; right:16px; z-index:2147483000;
-      width:min(380px,calc(100vw - 24px)); height:490px; min-width:260px; max-height:75dvh;
+    #mini-browser-root { position:fixed; bottom:16px; left:12px; right:auto; z-index:2147483000;
+      width:min(328px,calc(100vw - 24px)); height:490px; min-width:260px; max-height:75dvh;
       font:13px/1.4 system-ui,sans-serif; color:#2e2924; background:#faf7f0;
       border:1px solid #a69a87; border-radius:12px; overflow:hidden; display:flex;
       flex-direction:column; box-shadow:0 10px 28px #14100a44; resize:both; }
@@ -86,7 +86,7 @@
     #mini-browser-root.mb-bar select, #mini-browser-root.mb-bar .mb-open,
     #mini-browser-root.mb-bar .mb-settings-button {display:none!important;}
     #mini-browser-root.mb-bar .mb-title {flex:1;text-align:left;}
-    @media(max-width:600px) {#mini-browser-root {right:8px;bottom:8px;
+    @media(max-width:600px) {#mini-browser-root {left:8px;right:auto;bottom:8px;
       width:calc(100vw - 16px);height:min(460px,70dvh);min-width:240px;}
       #mini-browser-root select {max-width:90px;}}
   `;
