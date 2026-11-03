@@ -4,13 +4,14 @@ A lightweight, reusable mini-browser HUD for chat-first roleplaying games.
 
 **Design principle:** Mini displays game websites. It does **not** duplicate the game's inventory, finances, or other source-of-truth data, and it does **not** read ChatGPT narration automatically.
 
-## Current prototype (v0.2.1)
+## Current prototype (v0.2.2)
 
 - `mini-browser.user.js` — Tampermonkey userscript that overlays ChatGPT.
 - `examples/last-hearth/index.html` — independent, static Last Hearth tracker demo.
 - Three viewing modes: **Full** (embedded website), **Compact** (short game-summary viewport), and **Title only**.
 - The Mini Browser option is injected into the **existing Paths/Mizuhana top HUD switcher menus**. Inactive Mini adds no floating panel. When minimized, Mini uses a single top capsule in the same position as the other HUDs. No changes are made to the Paths or Mizuhana userscripts.
 - On desktop, expanded and compact Mini dock over the **left ChatGPT sidebar**, keeping the composer and narration unobstructed. The title-only capsule remains at the top center. On narrow mobile screens, Mini uses available screen width.
+- Desktop resize grips: **drag the right border to change width** and **drag the top border to change expanded height** (the window remains bottom-docked). Dimensions are saved between reloads and HUD switches. Keyboard users can focus a grip and use arrow keys. Mobile keeps responsive dimensions.
 - Add, rename, remove, and select game-website shortcuts.
 - Website shortcuts persist locally in Tampermonkey.
 - External-link action opens the game website in its own browser tab.
@@ -26,6 +27,7 @@ The Last Hearth is the **first test case**. Mizuhana and Paths to Immortality ar
 5. Collapse Paths/Mizuhana to their top capsule (if necessary), then **long-press or right-click the capsule** and select **◈ Mini Browser**. If no other HUD is loaded, Mini provides its own top capsule.
 6. When Mini opens, click **⚙** to set the HTTPS address of a **hosted** tracker website.
 7. Click the Mini title to cycle between Full → Compact → Title only. The **▤** control toggles Compact view directly. In title-only mode, **Mini Browser** appears as a top capsule; long-press/right-click that capsule to switch back to Paths or Mizuhana.
+8. On desktop, hover over the **right edge** to see a vertical grip and drag sideways to resize. Drag the **top edge** up/down to resize height. Mini remembers both dimensions.
 
 > Opening the demo HTML directly from your computer is suitable for previewing the example page, but the Mini HUD accepts HTTPS websites (or local development servers), not `file://` paths. We'll deploy a hosted tracker later.
 
