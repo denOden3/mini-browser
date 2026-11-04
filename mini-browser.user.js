@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Mini Browser — Universal Roleplay HUD
 // @namespace    mini-browser.chat-rpg
-// @version      0.2.2
+// @version      0.3.0
 // @description  A reusable mini browser for chat-first RPG tracker websites.
 // @updateURL    https://github.com/denOden3/mini-browser/raw/main/mini-browser.user.js
 // @downloadURL  https://github.com/denOden3/mini-browser/raw/main/mini-browser.user.js
@@ -34,6 +34,10 @@
   // v0.2: the game browser participates in the existing top HUD switchers.
   // The original Paths/Mizuhana scripts remain unchanged.
   state.miniSelected = state.miniSelected === true;
+  state.view = state.view === 'library' ? 'library' : (state.view === 'game' ? 'game' : 'library');
+  state.homeUrl = typeof state.homeUrl === 'string' ? state.homeUrl : '';
+  state.compactHeight = Number.isFinite(state.compactHeight) ? state.compactHeight : 190;
+  state.sites = state.sites.map(s => ({...s, compactUrl: typeof s.compactUrl === 'string' ? s.compactUrl : ''}));
   const save = () => GM_setValue(STORAGE_KEY, JSON.stringify(state));
   const make = (tag, cls, text) => {
     const el = document.createElement(tag);
@@ -49,307 +53,379 @@
     } catch (_) { return false; }
   }
   const currentSite = () => state.sites.find(s => s.id === state.selected);
-  const css = String.raw`
-    #mini-browser-root, #mini-browser-root * { box-sizing:border-box; }
-    #mini-browser-root { position:fixed; bottom:16px; left:12px; right:auto; z-index:2147483000;
-      width:328px; height:490px; min-width:260px; max-width:calc(100vw - 24px);
-      min-height:210px; max-height:calc(100dvh - 32px);
-      font:13px/1.4 system-ui,sans-serif; color:#2e2924; background:#faf7f0;
-      border:1px solid #a69a87; border-radius:12px; overflow:hidden; display:flex;
-      flex-direction:column; box-shadow:0 10px 28px #14100a44; resize:none; }
-    #mini-browser-root.mb-compact {height:185px!important;}
-    #mini-browser-root.mb-bar {height:44px!important;}
-    #mini-browser-root button, #mini-browser-root input, #mini-browser-root select {font:inherit;}
-    #mini-browser-root button {cursor:pointer;}
-    #mini-browser-root .mb-head {display:flex;align-items:center;gap:5px;background:#e9dfcf;
-      height:43px;min-height:43px;padding:5px;border-bottom:1px solid #c7b8a4;}
-    #mini-browser-root .mb-title {border:0;background:transparent;color:inherit;font-weight:750;
-      flex:0 0 auto;padding:6px;white-space:nowrap;}
-    #mini-browser-root select {background:#fff;color:inherit;min-width:60px;max-width:125px;
-      flex:1;padding:5px;border:1px solid #baac99;border-radius:5px;}
-    #mini-browser-root .mb-icon {border:0;background:transparent;color:inherit;padding:5px;
-      border-radius:5px;min-width:27px;}
-    #mini-browser-root .mb-icon:hover {background:#d7cbb8;}
-    #mini-browser-root .mb-content {flex:1;min-height:0;background:white;}
-    #mini-browser-root iframe {display:block;width:100%;height:100%;border:0;}
-    #mini-browser-root .mb-empty {height:100%;padding:18px;display:flex;flex-direction:column;
-      justify-content:center;align-items:center;gap:10px;text-align:center;color:#625648;}
-    #mini-browser-root .mb-empty button, #mini-browser-root .mb-settings button {border:0;
-      border-radius:6px;background:#594a39;color:white;padding:8px 12px;}
-    #mini-browser-root .mb-settings {display:none;flex:1;overflow:auto;padding:12px;
-      background:#faf7f0;flex-direction:column;gap:9px;}
-    #mini-browser-root .mb-settings label {display:flex;flex-direction:column;gap:4px;font-weight:650;}
-    #mini-browser-root .mb-settings input {min-width:0;padding:8px;border:1px solid #b7a994;
-      border-radius:6px;background:white;color:inherit;}
-    #mini-browser-root .mb-settings .mb-actions {display:flex;flex-wrap:wrap;gap:7px;}
-    #mini-browser-root .mb-note {font-size:11px;color:#776b5d;}
-    #mini-browser-root.mb-bar .mb-content, #mini-browser-root.mb-bar .mb-settings,
-    #mini-browser-root.mb-bar select, #mini-browser-root.mb-bar .mb-open,
-    #mini-browser-root.mb-bar .mb-settings-button {display:none!important;}
-    #mini-browser-root.mb-bar .mb-title {flex:1;text-align:left;}
-    /* Drag the right border to resize width or the top border to resize height.
-       The bottom stays docked above the taskbar, so narration stays readable. */
-    #mini-browser-root .mb-resize-width, #mini-browser-root .mb-resize-height {
-      position:absolute;z-index:8;touch-action:none;user-select:none;
-      -webkit-user-select:none;background:transparent;
-    }
-    #mini-browser-root .mb-resize-width {right:0;top:45px;bottom:0;width:13px;cursor:ew-resize;}
-    #mini-browser-root .mb-resize-width::after {
-      content:"";display:block;position:absolute;top:50%;right:4px;
-      height:46px;width:3px;transform:translateY(-50%);
-      border-radius:4px;background:#a9977e;opacity:.8;
-    }
-    #mini-browser-root .mb-resize-height {
-      top:0;left:28px;right:28px;height:9px;cursor:ns-resize;
-    }
-    #mini-browser-root .mb-resize-height::after {
-      content:"";display:block;position:absolute;top:3px;left:50%;
-      width:48px;height:3px;transform:translateX(-50%);
-      border-radius:4px;background:#a9977e;opacity:.85;
-    }
-    #mini-browser-root .mb-resize-width:hover::after,
-    #mini-browser-root .mb-resize-height:hover::after,
-    #mini-browser-root .mb-resize-width:focus-visible::after,
-    #mini-browser-root .mb-resize-height:focus-visible::after {background:#5c4835;}
-    #mini-browser-root.mb-compact .mb-resize-height,
-    #mini-browser-root.mb-bar .mb-resize-width,
-    #mini-browser-root.mb-bar .mb-resize-height {display:none!important;}
-    #mini-browser-root.mb-resizing iframe {pointer-events:none;}
-    @media(max-width:600px) {#mini-browser-root {left:8px;right:auto;bottom:8px;
-      width:calc(100vw - 16px);height:min(460px,70dvh);min-width:240px;}
-      #mini-browser-root .mb-resize-width,#mini-browser-root .mb-resize-height {display:none!important;}
-      #mini-browser-root select {max-width:90px;}}
-  `;
-  document.head.append(Object.assign(make("style"), { textContent: css }));
+  const css = "\n  #mini-browser-root, #mini-browser-root * {box-sizing:border-box}\n  #mini-browser-root {\n    position:fixed;z-index:2147483400;left:12px;right:auto;bottom:16px;top:auto;\n    transform:none;width:328px;height:490px;max-width:calc(100vw - 16px);\n    min-width:235px;min-height:150px;display:flex;flex-direction:column;\n    border:1px solid #a89b87;border-radius:12px;overflow:hidden;\n    background:#faf7f0;color:#29241f;\n    box-shadow:0 12px 29px #17110b44;\n    font:13px/1.4 system-ui,-apple-system,sans-serif;\n  }\n  #mini-browser-root button, #mini-browser-root input {font:inherit}\n  #mini-browser-root button {cursor:pointer}\n  #mini-browser-root button:focus-visible, #mini-browser-root input:focus-visible,\n  #mini-browser-root .mb-edge:focus-visible {outline:2px solid #9b5835;outline-offset:-2px}\n  #mini-browser-root .mb-head {\n    flex:0 0 48px;min-width:0;display:flex;align-items:center;\n    gap:2px;padding:5px 7px;background:#e9dfcf;border-bottom:1px solid #c5b8a4;\n  }\n  #mini-browser-root .mb-title {\n    flex:1 1 auto;min-width:0;border:0;background:none;color:inherit;\n    font-weight:800;text-align:left;overflow:hidden;text-overflow:ellipsis;\n    white-space:nowrap;font-size:12px;padding:8px 4px;\n  }\n  #mini-browser-root .mb-icon {\n    flex:0 0 32px;display:grid;place-items:center;\n    width:32px;height:34px;padding:4px;border:0;border-radius:6px;\n    color:#493e34;background:transparent;\n  }\n  #mini-browser-root .mb-icon svg {width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}\n  #mini-browser-root .mb-icon:hover {background:#d7c9b5}\n  #mini-browser-root .mb-icon.mb-active {background:#cbb79a;color:#382d20}\n  #mini-browser-root .mb-icon:disabled {opacity:.35;cursor:default}\n  #mini-browser-root .mb-content {flex:1;min-height:0;background:#fff;overflow:auto}\n  #mini-browser-root .mb-content iframe {border:0;width:100%;height:100%;display:block;background:white}\n  #mini-browser-root .mb-settings {flex:1;min-height:0;display:none;overflow:auto;padding:14px;background:#faf7f0}\n  #mini-browser-root .mb-settings h2 {margin:0 0 12px;font-size:15px}\n  #mini-browser-root .mb-settings h3 {font-size:12px;margin:14px 0 8px}\n  #mini-browser-root .mb-settings label {display:block;margin:10px 0;font-weight:650;font-size:12px}\n  #mini-browser-root .mb-settings input[type=url],\n  #mini-browser-root .mb-settings input[type=text] {\n    display:block;margin-top:5px;width:100%;min-width:0;padding:9px 10px;\n    border:1px solid #b6a58c;border-radius:7px;background:white;color:#29241f;\n  }\n  #mini-browser-root .mb-settings input[type=range] {display:block;width:100%;margin:12px 0 5px;accent-color:#66503c}\n  #mini-browser-root .mb-settings .mb-actions {display:flex;gap:6px;flex-wrap:wrap;margin-top:12px}\n  #mini-browser-root .mb-settings .mb-actions button,\n  #mini-browser-root .mb-main-action {\n    border:1px solid #5c4c3a;background:#5c4c3a;color:#fff;\n    padding:8px 11px;border-radius:7px;font-size:12px;font-weight:650;\n  }\n  #mini-browser-root .mb-settings .mb-actions button.mb-light {background:transparent;color:#5c4c3a}\n  #mini-browser-root .mb-hint {font-size:11px;color:#786d60;margin:6px 0 0;line-height:1.5}\n  #mini-browser-root .mb-library {padding:14px;min-height:100%}\n  #mini-browser-root .mb-library h2 {margin:0;font-family:Georgia,serif;font-size:20px}\n  #mini-browser-root .mb-library p {color:#776c5e;font-size:12px;margin:6px 0 14px}\n  #mini-browser-root .mb-library-card {\n    display:flex;align-items:center;justify-content:space-between;\n    gap:9px;width:100%;border:1px solid #dfd3c3;border-radius:9px;\n    background:#faf7f1;text-align:left;margin:0 0 9px;padding:13px;\n    color:#382c20;\n  }\n  #mini-browser-root .mb-library-card:hover {background:#f0e6d7}\n  #mini-browser-root .mb-library-card b {display:block;font-size:13px}\n  #mini-browser-root .mb-library-card small {display:block;margin-top:3px;font-size:11px;color:#796e61}\n  #mini-browser-root .mb-empty {\n    min-height:100%;padding:22px;display:flex;align-items:center;\n    justify-content:center;flex-direction:column;gap:11px;text-align:center;\n    color:#68594b;\n  }\n  #mini-browser-root .mb-empty strong {font:700 18px Georgia,serif;color:#443629}\n  #mini-browser-root .mb-empty p {font-size:12px;max-width:230px;margin:0}\n  #mini-browser-root .mb-edge {\n    position:absolute;z-index:9;touch-action:none;user-select:none;\n    -webkit-user-select:none;background:transparent;\n  }\n  #mini-browser-root .mb-edge-right {right:0;top:49px;bottom:11px;width:12px;cursor:ew-resize}\n  #mini-browser-root .mb-edge-left {left:0;top:49px;bottom:11px;width:10px;cursor:ew-resize}\n  #mini-browser-root .mb-edge-top {top:0;left:25%;right:25%;height:8px;cursor:ns-resize}\n  #mini-browser-root .mb-edge-bottom {bottom:0;left:25%;right:25%;height:12px;cursor:ns-resize}\n  #mini-browser-root .mb-edge-right::after,#mini-browser-root .mb-edge-top::after {\n    content:\"\";position:absolute;background:#a9977e;border-radius:5px;opacity:.8;\n  }\n  #mini-browser-root .mb-edge-right::after {width:3px;height:38px;top:50%;right:3px;transform:translateY(-50%)}\n  #mini-browser-root .mb-edge-top::after {width:42px;height:3px;left:50%;top:2px;transform:translateX(-50%)}\n  #mini-browser-root.mb-compact .mb-edge,\n  #mini-browser-root.mb-bar .mb-edge {display:none!important}\n  #mini-browser-root.mb-resizing iframe {pointer-events:none}\n  @media(max-width:600px) {\n    #mini-browser-root {\n      position:fixed;left:50%;right:auto;top:max(56px,env(safe-area-inset-top,0px) + 52px);\n      bottom:auto;transform:translateX(-50%);\n      width:calc(100vw - 16px);max-width:calc(100vw - 12px);\n      height:min(500px,calc(100dvh - 72px));\n      border-radius:11px;\n    }\n    #mini-browser-root .mb-head {gap:1px;padding:5px 4px}\n    #mini-browser-root .mb-title {font-size:11px;padding:6px 2px}\n    #mini-browser-root .mb-icon {flex-basis:31px;width:31px}\n    #mini-browser-root .mb-edge-right,#mini-browser-root .mb-edge-left {width:14px}\n  }\n  @media(max-width:350px) {\n    #mini-browser-root .mb-icon {flex-basis:28px;width:28px}\n    #mini-browser-root .mb-icon svg {width:18px;height:18px}\n  }";
+  document.head.append(Object.assign(make('style'),{textContent:css}));
 
-  const root = make("section");
-  root.id = "mini-browser-root";
-  root.setAttribute("aria-label", "Mini Browser HUD");
-  const header = make("div", "mb-head");
-  const title = make("button", "mb-title", "▾ MINI BROWSER");
-  title.type = "button";
-  title.title = "Cycle full, compact, and title-only modes";
-  const selector = make("select");
-  selector.title = "Choose a game website";
-  const compact = make("button", "mb-icon", "▤");
-  compact.title = "Toggle compact tracker";
-  const open = make("button", "mb-icon mb-open", "↗");
-  open.title = "Open game website in a new tab";
-  const settingsBtn = make("button", "mb-icon mb-settings-button", "⚙");
-  settingsBtn.title = "Manage game websites";
-  header.append(title, selector, compact, open, settingsBtn);
+  const root=make("section");
+  root.id="mini-browser-root";
+  root.setAttribute("aria-label","Mini Browser HUD");
+  const header=make("div","mb-head");
+  const title=make("button","mb-title","Mini Browser");
+  title.type="button";
+  title.title="Minimize Mini into the shared HUD button";
+  const icons={
+    library:'<svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>',
+    external:'<svg viewBox="0 0 24 24"><path d="M5 19 19 5M10 5h9v9"/></svg>',
+    compact:'<svg viewBox="0 0 24 24"><rect x="3" y="9" width="18" height="7" rx="1"/></svg>',
+    expand:'<svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/></svg>',
+    settings:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.1"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M4.93 4.93l1.41 1.41m11.32 11.32 1.41 1.41m0-14.14-1.41 1.41M6.34 17.66l-1.41 1.41"/></svg>'
+  };
+  function iconButton(symbol,label){
+    const button=make("button","mb-icon");
+    button.type="button";button.innerHTML=icons[symbol];
+    button.setAttribute("aria-label",label);
+    button.title=label;
+    return button;
+  }
+  const libraryButton=iconButton("library","Mini Library · Saved games and homepage");
+  const externalButton=iconButton("external","Open current webpage in a new browser tab");
+  const compactButton=iconButton("compact","Show compact tracker");
+  const expandButton=iconButton("expand","Expanded view · Drag edges to resize");
+  const settingsButton=iconButton("settings","Mini settings");
+  header.append(title,libraryButton,externalButton,compactButton,expandButton,settingsButton);
 
-  const content = make("div", "mb-content");
-  const settings = make("div", "mb-settings");
-  const nameLabel = make("label", "", "Game name");
-  const nameField = make("input");
-  nameField.placeholder = "The Last Hearth";
-  nameLabel.append(nameField);
-  const urlLabel = make("label", "", "Tracker webpage URL");
-  const urlField = make("input");
-  urlField.type = "url";
-  urlField.placeholder = "https://example.com/my-game";
-  urlLabel.append(urlField);
-  const actions = make("div", "mb-actions");
-  const add = make("button", "", "New shortcut");
-  const store = make("button", "", "Save");
-  const remove = make("button", "", "Remove");
-  actions.append(add, store, remove);
-  settings.append(nameLabel, urlLabel, actions,
-    make("p", "mb-note", "Choose an HTTPS website you trust. Some websites block embedding; ↗ opens them directly. Shortcuts are stored locally in Tampermonkey. No narration or game-state data is collected by Mini."));
-  const widthHandle = make("div", "mb-resize-width");
-  widthHandle.title = "Drag left or right to resize Mini Browser";
-  widthHandle.setAttribute("role", "separator");
-  widthHandle.setAttribute("aria-orientation", "vertical");
-  widthHandle.setAttribute("aria-label", "Resize Mini Browser width");
-  widthHandle.tabIndex = 0;
-  const heightHandle = make("div", "mb-resize-height");
-  heightHandle.title = "Drag up or down to resize Mini Browser";
-  heightHandle.setAttribute("role", "separator");
-  heightHandle.setAttribute("aria-orientation", "horizontal");
-  heightHandle.setAttribute("aria-label", "Resize Mini Browser height");
-  heightHandle.tabIndex = 0;
-  root.append(header, content, settings, widthHandle, heightHandle);
+  const content=make("div","mb-content");
+  const settingsPanel=make("div","mb-settings");
+  const settingsHeading=make("h2","","Mini settings");
+  const gameHeading=make("h3","","Selected game shortcut");
+  const nameLabel=make("label","","Game name");
+  const nameInput=make("input");nameInput.type="text";nameInput.placeholder="The Last Hearth";
+  nameLabel.append(nameInput);
+  const urlLabel=make("label","","Game webpage URL");
+  const urlInput=make("input");urlInput.type="url";urlInput.placeholder="https://your-game.example";
+  urlLabel.append(urlInput);
+  const compactLabel=make("label","","Compact tracker URL · optional");
+  const compactInput=make("input");compactInput.type="url";compactInput.placeholder="https://your-game.example/compact";
+  compactLabel.append(compactInput);
+  const compactHint=make("p","mb-hint","Leave blank to use the game's regular website in the shorter compact window.");
+  const addActions=make("div","mb-actions");
+  const newButton=make("button","mb-light","＋ New game");
+  const saveButton=make("button","","Save changes");
+  const removeButton=make("button","mb-light","Remove game");
+  addActions.append(newButton,saveButton,removeButton);
+  const personalHeading=make("h3","","Mini-wide preferences");
+  const homeLabel=make("label","","Hosted Mini homepage URL · optional");
+  const homeInput=make("input");homeInput.type="url";homeInput.placeholder="https://mini.example";
+  homeLabel.append(homeInput);
+  const homeHint=make("p","mb-hint","Until we publish Mini's homepage, the four-square button opens your built-in game library.");
+  const heightLabel=make("label","","Compact tracker height");
+  const compactRange=make("input");
+  compactRange.type="range";compactRange.min="140";compactRange.max="320";compactRange.step="10";
+  const heightValue=make("span","","190px");
+  heightLabel.append(heightValue,compactRange);
+  const globalActions=make("div","mb-actions");
+  const savePreferences=make("button","","Save preferences");
+  const closeSettings=make("button","mb-light","Back to browser");
+  globalActions.append(savePreferences,closeSettings);
+  const dataHint=make("p","mb-hint","Mini stores links and layout preferences locally. It does not read chat narration or automatically update game databases. Only open websites you trust.");
+  settingsPanel.append(settingsHeading,gameHeading,nameLabel,urlLabel,compactLabel,compactHint,
+    addActions,personalHeading,homeLabel,homeHint,heightLabel,globalActions,dataHint);
+
+  const edges={};
+  for(const edge of ["left","right","top","bottom"]){
+    const handle=make("div","mb-edge mb-edge-"+edge);
+    handle.setAttribute("role","separator");
+    handle.setAttribute("aria-label","Resize Mini from "+edge+" edge");
+    handle.title="Drag to resize";
+    handle.tabIndex=0;
+    edges[edge]=handle;
+  }
+  root.append(header,content,settingsPanel,...Object.values(edges));
   document.body.append(root);
 
-  // Keep the user's chosen window size across reloads and HUD switches.
-  const initialSize = state.windowSize && typeof state.windowSize === "object" ? state.windowSize : {};
-  state.windowSize = {
-    width: Number.isFinite(initialSize.width) ? initialSize.width : 328,
-    height: Number.isFinite(initialSize.height) ? initialSize.height : 490
+  // Upgrade v0.2 saved geometry without resetting browser shortcuts.
+  const oldSize=state.windowSize && typeof state.windowSize==="object" ? state.windowSize : {};
+  state.windowSize={
+    width: Number.isFinite(oldSize.width) ? oldSize.width : 328,
+    height: Number.isFinite(oldSize.height) ? oldSize.height : 490,
+    left: Number.isFinite(oldSize.left) ? oldSize.left : 12,
+    bottom: Number.isFinite(oldSize.bottom) ? oldSize.bottom : 16
   };
-  const clamp = (value, low, high) => Math.max(low, Math.min(high, value));
-  function windowBounds() {
-    return {
-      width: Math.max(260, Math.min(900, window.innerWidth - 24)),
-      height: Math.max(210, window.innerHeight - 32)
-    };
-  }
-  function applyWindowSize() {
-    if (window.innerWidth <= 600) {
-      // Mobile layout uses the available viewport width rather than desktop dimensions.
-      root.style.removeProperty("width");
-      root.style.removeProperty("height");
-      return;
+  const mobileSize=state.mobileSize && typeof state.mobileSize==="object" ? state.mobileSize : {};
+  state.mobileSize={
+    width:Number.isFinite(mobileSize.width)?mobileSize.width:Math.min(420,innerWidth-16),
+    height:Number.isFinite(mobileSize.height)?mobileSize.height:Math.min(500,innerHeight-100),
+    top:Number.isFinite(mobileSize.top)?mobileSize.top:56
+  };
+  let settingsVisible=false, editing=state.selected;
+  let displayedKey=null;
+  const clamp=(value,min,max)=>Math.min(max,Math.max(min,value));
+  const isMobile=()=>window.innerWidth<=600;
+  const readHeight=()=>clamp(state.compactHeight,140,320);
+  function applyWindowSize(){
+    const mobile=isMobile();
+    const stateSize=mobile?state.mobileSize:state.windowSize;
+    const maxWidth=Math.max(210,window.innerWidth-16);
+    const minWidth=Math.min(235,maxWidth);
+    const width=clamp(stateSize.width,minWidth,Math.min(900,maxWidth));
+    root.style.width=width+"px";
+    if(mobile){
+      const top=clamp(stateSize.top,52,Math.max(52,window.innerHeight-160));
+      root.style.top=top+"px";
+      root.style.bottom="auto";
+      root.style.left="50%";
+      root.style.transform="translateX(-50%)";
+      const height=state.mode==="compact"?readHeight():clamp(stateSize.height,150,Math.max(150,window.innerHeight-top-8));
+      root.style.height=height+"px";
+    }else{
+      const left=clamp(stateSize.left,4,Math.max(4,window.innerWidth-minWidth-4));
+      const bottom=clamp(stateSize.bottom,4,Math.max(4,window.innerHeight-170));
+      root.style.left=left+"px";
+      root.style.right="auto";
+      root.style.top="auto";
+      root.style.bottom=bottom+"px";
+      root.style.transform="none";
+      root.style.width=clamp(width,minWidth,window.innerWidth-left-4)+"px";
+      const height=state.mode==="compact"?readHeight():clamp(stateSize.height,150,Math.max(150,window.innerHeight-bottom-8));
+      root.style.height=height+"px";
     }
-    const bounds = windowBounds();
-    root.style.width = clamp(state.windowSize.width, 260, bounds.width) + "px";
-    root.style.height = clamp(state.windowSize.height, 210, bounds.height) + "px";
   }
-  let drag = null;
-  function startResize(event, dimension) {
-    if (event.button !== 0 || window.innerWidth <= 600 ||
-        state.mode === "bar" || (dimension === "height" && state.mode !== "open")) return;
+  let resizeSession=null;
+  function startResize(event,edge){
+    if(event.button!==0||state.mode!=="open")return;
+    const bounds=root.getBoundingClientRect();
     event.preventDefault();
     event.stopPropagation();
-    const handle = event.currentTarget;
-    drag = {
-      dimension, handle, pointerId: event.pointerId,
-      x: event.clientX, y: event.clientY,
-      width: root.getBoundingClientRect().width,
-      height: root.getBoundingClientRect().height
-    };
+    resizeSession={edge,id:event.pointerId,
+      x:event.clientX,y:event.clientY,
+      width:bounds.width,height:bounds.height,
+      left:state.windowSize.left,bottom:state.windowSize.bottom,top:state.mobileSize.top};
     root.classList.add("mb-resizing");
-    handle.setPointerCapture(event.pointerId);
+    event.currentTarget.setPointerCapture(event.pointerId);
   }
-  function moveResize(event) {
-    if (!drag || drag.pointerId !== event.pointerId ||
-        drag.handle !== event.currentTarget) return;
-    const bounds = windowBounds();
-    if (drag.dimension === "width") {
-      const width = clamp(Math.round(drag.width + event.clientX - drag.x), 260, bounds.width);
-      root.style.width = width + "px";
-      state.windowSize.width = width;
-    } else {
-      // Bottom-docked: moving the TOP edge upward increases the window height.
-      const height = clamp(Math.round(drag.height + drag.y - event.clientY), 210, bounds.height);
-      root.style.height = height + "px";
-      state.windowSize.height = height;
+  function moveResize(event){
+    if(!resizeSession||event.pointerId!==resizeSession.id)return;
+    const d=resizeSession,mobile=isMobile();
+    const dx=event.clientX-d.x,dy=event.clientY-d.y;
+    const target=mobile?state.mobileSize:state.windowSize;
+    const widthLimit=Math.min(900,Math.max(235,innerWidth-16));
+    if(d.edge==="right"||d.edge==="left"){
+      if(mobile){
+        const movement=(d.edge==="right"?dx:-dx)*2;
+        target.width=clamp(Math.round(d.width+movement),235,widthLimit);
+      }else if(d.edge==="right"){
+        target.width=clamp(Math.round(d.width+dx),235,Math.max(235,innerWidth-target.left-4));
+      }else{
+        const rightBoundary=d.left+d.width;
+        const proposedLeft=clamp(Math.round(d.left+dx),4,rightBoundary-235);
+        target.left=proposedLeft;
+        target.width=clamp(rightBoundary-proposedLeft,235,widthLimit);
+      }
+    }else if(d.edge==="top"){
+      if(mobile){
+        const newTop=clamp(Math.round(d.top+dy),52,d.top+d.height-150);
+        target.top=newTop;
+        target.height=clamp(Math.round(d.height-(newTop-d.top)),150,innerHeight-newTop-8);
+      }else{
+        target.height=clamp(Math.round(d.height-dy),150,Math.max(150,innerHeight-target.bottom-8));
+      }
+    }else if(d.edge==="bottom"){
+      if(mobile){
+        target.height=clamp(Math.round(d.height+dy),150,Math.max(150,innerHeight-target.top-8));
+      }else{
+        const topBoundary=innerHeight-(d.bottom+d.height);
+        const newBottom=clamp(Math.round(d.bottom-dy),4,innerHeight-topBoundary-150);
+        target.bottom=newBottom;
+        target.height=clamp(innerHeight-topBoundary-newBottom,150,innerHeight-newBottom-8);
+      }
     }
-  }
-  function stopResize(event) {
-    if (!drag || drag.pointerId !== event.pointerId ||
-        drag.handle !== event.currentTarget) return;
-    drag = null;
-    root.classList.remove("mb-resizing");
-    save();
-  }
-  for (const [handle, dimension] of [[widthHandle, "width"], [heightHandle, "height"]]) {
-    handle.addEventListener("pointerdown", event => startResize(event, dimension));
-    handle.addEventListener("pointermove", moveResize);
-    handle.addEventListener("pointerup", stopResize);
-    handle.addEventListener("pointercancel", stopResize);
-    handle.addEventListener("lostpointercapture", stopResize);
-    handle.addEventListener("keydown", event => {
-      const horizontal = dimension === "width";
-      const delta = event.key === (horizontal ? "ArrowRight" : "ArrowUp") ? 20
-        : event.key === (horizontal ? "ArrowLeft" : "ArrowDown") ? -20 : 0;
-      if (!delta || window.innerWidth <= 600) return;
-      event.preventDefault();
-      const bounds = windowBounds();
-      const property = horizontal ? "width" : "height";
-      const min = horizontal ? 260 : 210;
-      state.windowSize[property] = clamp(state.windowSize[property] + delta, min, bounds[property]);
-      applyWindowSize();
-      save();
-    });
-  }
-  window.addEventListener("resize", applyWindowSize);
-
-  let editing = null;
-  let settingsVisible = false;
-  function renderSite() {
-    const site = currentSite();
-    const url = site && validUrl(site.url) ? site.url : "";
-    if (url) {
-      const existing = content.querySelector("iframe");
-      if (existing && existing.getAttribute("src") === url) return;
-      const frame = make("iframe");
-      frame.title = (site.name || "Game") + " website";
-      frame.src = url;
-      frame.loading = "lazy";
-      frame.referrerPolicy = "strict-origin-when-cross-origin";
-      content.replaceChildren(frame);
-    } else {
-      const empty = make("div", "mb-empty");
-      empty.append(make("strong", "", site?.name || "Mini Browser"),
-        make("div", "", "Add this game's website to display its tracker here."));
-      const button = make("button", "", "Set website URL");
-      button.onclick = () => showSettings(true);
-      empty.append(button);
-      content.replaceChildren(empty);
-    }
-  }
-  function render() {
-    state.mode = ["open", "compact", "bar"].includes(state.mode) ? state.mode : "open";
-    root.className = state.mode === "open" ? "" : "mb-" + state.mode;
     applyWindowSize();
-    title.textContent = (state.mode === "open" ? "▾" : "▸") + " MINI BROWSER";
-    compact.textContent = state.mode === "compact" ? "□" : "▤";
-    selector.replaceChildren();
-    for (const site of state.sites) {
-      const option = make("option", "", site.name);
-      option.value = site.id;
-      selector.append(option);
+  }
+  function endResize(event){
+    if(!resizeSession||event.pointerId!==resizeSession.id)return;
+    resizeSession=null;root.classList.remove("mb-resizing");save();
+  }
+  for(const [edge,handle] of Object.entries(edges)){
+    handle.onpointerdown=event=>startResize(event,edge);
+    handle.onpointermove=moveResize;
+    handle.onpointerup=endResize;
+    handle.onpointercancel=endResize;
+    handle.onlostpointercapture=endResize;
+    handle.onkeydown=event=>{
+      const direction=(edge==="left"||edge==="right")
+        ?(event.key==="ArrowRight"?1:event.key==="ArrowLeft"?-1:0)
+        :(event.key==="ArrowDown"?1:event.key==="ArrowUp"?-1:0);
+      if(!direction||state.mode!=="open")return;
+      event.preventDefault();
+      const size=isMobile()?state.mobileSize:state.windowSize;
+      const mobile=isMobile(),unit=20;
+      if(edge==="right")size.width+=direction*unit*(mobile?2:1);
+      if(edge==="left")size.width-=direction*unit*(mobile?2:1);
+      if(edge==="bottom")size.height+=direction*unit;
+      if(edge==="top")size.height-=direction*unit;
+      applyWindowSize();save();
+    };
+  }
+  window.addEventListener("resize",applyWindowSize);
+
+  function showMessage(label,message){
+    const empty=make("div","mb-empty");
+    empty.append(make("strong","",label),make("p","",message));
+    const button=make("button","mb-main-action","Configure game");
+    button.onclick=()=>openSettings();
+    empty.append(button);
+    content.replaceChildren(empty);
+  }
+  function makeLibrary(){
+    const list=make("section","mb-library");
+    list.append(make("h2","","✦ Mini Library"),
+      make("p","","Your games, one tiny window. Choose a game to open its tracker."));
+    if(!state.sites.length){
+      list.append(make("p","","No games saved yet. Add one from Settings."));
     }
-    if (!currentSite()) state.selected = state.sites[0]?.id || null;
-    selector.value = state.selected || "";
-    open.disabled = !validUrl(currentSite()?.url);
-    open.style.opacity = open.disabled ? ".4" : "1";
-    if (!settingsVisible) renderSite();
+    for(const site of state.sites){
+      const card=make("button","mb-library-card");
+      card.type="button";
+      const left=make("span");
+      left.append(make("b","",site.name),make("small","",validUrl(site.url)?"Open tracker":"Awaiting game website"));
+      card.append(left,make("span","","›"));
+      card.onclick=()=>{state.selected=site.id;state.view="game";save();render();};
+      list.append(card);
+    }
+    const addGame=make("button","mb-main-action","＋ Add game");
+    addGame.onclick=()=>{openSettings();startNewGame();};
+    list.append(addGame,make("p","mb-hint","The hosted Mini homepage is planned. This built-in library works in the meantime."));
+    content.replaceChildren(list);
+  }
+  function iframeFor(url,label){
+    const key="iframe|"+url;
+    if(displayedKey===key&&content.querySelector("iframe"))return;
+    const iframe=make("iframe");
+    iframe.title=label;
+    iframe.src=url;
+    iframe.loading="lazy";
+    iframe.referrerPolicy="strict-origin-when-cross-origin";
+    content.replaceChildren(iframe);
+    displayedKey=key;
+  }
+  function renderContent(){
+    if(state.view==="library"){
+      if(validUrl(state.homeUrl))iframeFor(state.homeUrl,"Mini Library homepage");
+      else {makeLibrary();displayedKey="library";}
+      return;
+    }
+    const site=currentSite();
+    if(!site){state.view="library";makeLibrary();displayedKey="library";return;}
+    const url=state.mode==="compact"&&validUrl(site.compactUrl)?site.compactUrl:site.url;
+    if(validUrl(url)) iframeFor(url,site.name+" tracker");
+    else{
+      if(displayedKey!=="empty|"+site.id){
+        showMessage(site.name,"This game doesn't have a website yet. Add its address in Settings.");
+        displayedKey="empty|"+site.id;
+      }
+    }
+  }
+  function activeURL(){
+    if(state.view==="library")return validUrl(state.homeUrl)?state.homeUrl:"";
+    const site=currentSite();
+    const url=state.mode==="compact"&&validUrl(site?.compactUrl)?site.compactUrl:site?.url;
+    return validUrl(url)?url:"";
+  }
+  function render(){
+    state.mode=["open","compact","bar"].includes(state.mode)?state.mode:"open";
+    root.classList.toggle("mb-compact",state.mode==="compact");
+    root.classList.toggle("mb-bar",state.mode==="bar");
+    applyWindowSize();
+    libraryButton.classList.toggle("mb-active",state.view==="library"&&!settingsVisible);
+    compactButton.classList.toggle("mb-active",state.mode==="compact");
+    expandButton.classList.toggle("mb-active",state.mode==="open");
+    settingsButton.classList.toggle("mb-active",settingsVisible);
+    const site=currentSite();
+    title.textContent="Mini Browser";
+    externalButton.disabled=!activeURL();
+    externalButton.title=externalButton.disabled?"No hosted webpage to open yet":"Open current webpage in a new tab";
+    settingsPanel.style.display=settingsVisible?"block":"none";
+    content.style.display=settingsVisible?"none":"block";
+    if(!settingsVisible)renderContent();
     syncMiniIntegration();
   }
-  function showSettings(visible) {
-    settingsVisible = visible;
-    settings.style.display = visible ? "flex" : "none";
-    content.style.display = visible ? "none" : "block";
-    if (visible) {
-      editing = state.selected;
-      nameField.value = currentSite()?.name || "";
-      urlField.value = currentSite()?.url || "";
-      if (state.mode === "bar") state.mode = "open";
-    }
+  function openSettings(){
+    settingsVisible=true;
+    editing=state.selected;
+    const site=currentSite();
+    nameInput.value=site?.name||"";
+    urlInput.value=site?.url||"";
+    compactInput.value=site?.compactUrl||"";
+    homeInput.value=state.homeUrl;
+    compactRange.value=String(readHeight());
+    heightValue.textContent=readHeight()+"px";
+    if(state.mode==="bar")state.mode="open";
     render();
   }
-  title.onclick = () => {
-    state.mode = state.mode === "open" ? "compact" : state.mode === "compact" ? "bar" : "open";
-    save(); render();
-  };
-  compact.onclick = () => {
-    state.mode = state.mode === "compact" ? "open" : "compact";
-    save(); render();
-  };
-  selector.onchange = () => {
-    state.selected = selector.value; save(); showSettings(false);
-  };
-  open.onclick = () => {
-    const url = currentSite()?.url;
-    if (validUrl(url)) window.open(url, "_blank", "noopener,noreferrer");
-  };
-  settingsBtn.onclick = () => showSettings(!settingsVisible);
-  add.onclick = () => { editing = null; nameField.value = ""; urlField.value = ""; nameField.focus(); };
-  store.onclick = () => {
-    const name = nameField.value.trim();
-    const url = urlField.value.trim();
-    if (!name || (url && !validUrl(url))) {
-      alert("Enter a game name and a valid HTTPS URL (or localhost)."); return;
+  function startNewGame(){
+    editing=null;
+    nameInput.value="";
+    urlInput.value="";
+    compactInput.value="";
+    nameInput.focus();
+  }
+  function closePanel(){
+    settingsVisible=false;
+    render();
+  }
+  function validateURL(value){
+    return !value||validUrl(value);
+  }
+  function saveGame(){
+    const name=nameInput.value.trim();
+    const url=urlInput.value.trim(),compactUrl=compactInput.value.trim();
+    if(!name){alert("Please give this game a name.");return;}
+    if(!validateURL(url)||!validateURL(compactUrl)){
+      alert("Use an HTTPS webpage address (or localhost for development).");return;
     }
-    if (editing && state.sites.some(s => s.id === editing)) {
-      state.sites = state.sites.map(s => s.id === editing ? {...s, name, url} : s);
-      state.selected = editing;
-    } else {
-      const id = "site-" + Date.now();
-      state.sites.push({id, name, url});
-      state.selected = id;
+    if(editing&&state.sites.some(s=>s.id===editing)){
+      state.sites=state.sites.map(s=>s.id===editing?{...s,name,url,compactUrl}:s);
+      state.selected=editing;
+    }else{
+      const id="game-"+Date.now();
+      state.sites.push({id,name,url,compactUrl});
+      state.selected=id;
     }
-    save(); showSettings(false);
+    state.view="game";
+    save();closePanel();
+  }
+  function removeGame(){
+    if(!editing||!state.sites.some(s=>s.id===editing))return;
+    if(!confirm("Remove this game shortcut? Game data and websites are not deleted."))return;
+    state.sites=state.sites.filter(s=>s.id!==editing);
+    state.selected=state.sites[0]?.id||null;
+    state.view="library";
+    save();closePanel();
+  }
+  function saveGlobal(){
+    const value=homeInput.value.trim();
+    if(!validateURL(value)){alert("Use an HTTPS Mini homepage address.");return;}
+    state.homeUrl=value;
+    state.compactHeight=Number(compactRange.value);
+    save();closePanel();
+  }
+  title.onclick=()=>{settingsVisible=false;state.mode="bar";save();render();};
+  libraryButton.onclick=()=>{
+    settingsVisible=false;
+    state.view="library";
+    save();render();
   };
-  remove.onclick = () => {
-    if (!editing || !confirm("Remove this game shortcut?")) return;
-    state.sites = state.sites.filter(s => s.id !== editing);
-    state.selected = state.sites[0]?.id || null;
-    save(); showSettings(false);
+  externalButton.onclick=()=>{
+    const url=activeURL();
+    if(url)window.open(url,"_blank","noopener,noreferrer");
   };
+  compactButton.onclick=()=>{
+    settingsVisible=false;
+    state.mode="compact";
+    save();render();
+  };
+  expandButton.onclick=()=>{
+    settingsVisible=false;
+    state.mode="open";
+    save();render();
+  };
+  settingsButton.onclick=()=>settingsVisible?closePanel():openSettings();
+  newButton.onclick=startNewGame;
+  saveButton.onclick=saveGame;
+  removeButton.onclick=removeGame;
+  closeSettings.onclick=closePanel;
+  savePreferences.onclick=saveGlobal;
+  compactRange.oninput=()=>{heightValue.textContent=compactRange.value+"px";};
 
   // Shared launcher integration: contribute a Mini option to Paths and Mizuhana
   // without editing either userscript. No separate bottom-right launcher.
