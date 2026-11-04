@@ -1,6 +1,20 @@
 # Mini Browser 🎲
 
-A universal, lightweight website HUD for chat-first roleplaying games. Mini displays each game's own website and does not replace the specialized Mizuhana or Paths to Immortality HUDs.
+A universal, lightweight companion for chat-first roleplaying games. Mini now renders game-configured native panels rather than relying on iframe embedding. The separate Mini Library website is the game-save editor. The specialized Mizuhana and Paths to Immortality HUDs remain independent.
+
+## v0.4.0 — Native, game-defined HUD menus
+
+**No external iframe is needed for game data.** The Mini Library website is the editor and local save, while Mini renders safe, native game panels using the saved menu configuration.
+
+- From the **website's Game Save** page, open **Mini HUD · Customize your game menus**. Add/remove/rename menus and add widgets within each menu. A widget can read any saved game field, such as current scene, relationships, cash, inventory, journal, or custom notes. Supported formats: text, stat tiles, list, label-value rows, and journal events.
+- Choose which menu appears in **compact tracker** mode.
+- On the **same browser where Tampermonkey is installed**, open or refresh `https://denoden3.github.io/mini-browser/` at least once **after installing Mini v0.4.0**. The userscript now also runs on the Mini website and copies the locally saved game library into Tampermonkey storage.
+- Return to ChatGPT. Use Mini's **four-square icon** for the game list. Choose a game, then select its own menu tabs; compact mode uses its chosen compact menu. Changes saved on the website can sync to Mini through a Tampermonkey storage listener, or by returning to the chat tab and reopening Mini.
+- The **↗** arrow opens the full website to edit your game or generate a continuation prompt.
+
+**Important:** This is **same-browser local synchronization**, not internet/cloud synchronization. If you edit a save on another device, another browser or a different browser profile, Mini cannot see it until the save is imported there. Website localStorage and Tampermonkey extension storage can both be lost when browser data is cleared. Keep JSON backups. Supabase authentication, cloud saves, event-level auto-updates from narration and cross-device support are future milestones.
+
+Mini's native renderer accepts only an allowlist of widget types and game fields, creating DOM text nodes rather than evaluating arbitrary HTML or scripts. Existing PTI and Mizuhana HUD code was not modified.
 
 ## v0.3.4 — diagnose blocked website embedding
 
