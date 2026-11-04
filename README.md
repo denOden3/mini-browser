@@ -2,7 +2,7 @@
 
 A universal, lightweight website HUD for chat-first roleplaying games. Mini displays each game's own website and does not replace the specialized Mizuhana or Paths to Immortality HUDs.
 
-## v0.3.1 — sketch-based UI
+## v0.3.2 — sketch-based UI
 
 **Header controls (left → right):**
 - **Mini Browser title** — minimize the panel into the shared top-center HUD capsule. Use the shared capsule to switch between Mini, Paths and Mizuhana.
@@ -14,7 +14,7 @@ A universal, lightweight website HUD for chat-first roleplaying games. Mini disp
 
 **Positioning and resizing:**
 - On **desktop**, Mini floats over the left ChatGPT sidebar, away from the composer. Drag its **right edge** for width, or **top edge** for expanded height. The dimensions are saved.
-- On **mobile**, Mini appears **top-center below the ChatGPT header** rather than at the bottom. In expanded mode, drag the **right edge** for width or the **bottom edge** for height. Its center stays aligned while resizing.
+- On **mobile**, Mini appears **top-center immediately below the browser toolbar, overlaying ChatGPT's native menu row**, like Mizuhana. Click the Mini Browser title to minimize into the shared HUD capsule whenever you want to access ChatGPT menus. In expanded mode, drag the **right edge** for width or the **bottom edge** for height. Its center stays aligned while resizing.
 - Compact mode has an adjustable short height in Settings. The full/expanded mode supports edge dragging.
 - The title minimizes directly to the shared capsule, rather than cycling through display sizes.
 
