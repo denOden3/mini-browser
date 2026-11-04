@@ -27,10 +27,26 @@ A universal, lightweight website HUD for chat-first roleplaying games. Mini disp
 
 With this **private GitHub repository**, Tampermonkey's automatic update checks may not always authenticate. The link above remains the preferred one-click update route when your browser recognizes the userscript.
 
+## Mini Library homepage (initial version)
+
+The repository root now contains **`index.html`**, the first Mini Library homepage. It's a standalone, responsive, offline-first website:
+
+- Saved games list, with **The Last Hearth** preloaded as a draft save;
+- Editable roleplay contract, world canon, characters/NPCs, checkpoint, scene, inventory, finances, and quests;
+- Event journal and local save points;
+- Generate and copy a continuation prompt for a new ChatGPT conversation;
+- JSON import/export for portable backups;
+- A compact three-stat tracker via `?view=compact`.
+
+**Storage scope:** This version stores state in the **browser's local storage**, not in GitHub, ChatGPT, or Supabase. It won't automatically sync between devices or update after each narration. In an embedded iframe, browser third-party storage restrictions can prevent or partition saves; keep JSON backups until we implement authenticated cloud storage. Treat the preloaded Last Hearth facts as an editable draft rather than an automatically verified current game state.
+
+**Hosting:** This source file is committed, but an accessible hosted homepage URL must be established before Mini's iframe can display it. The repository is private, so do not assume that GitHub Pages is available or enabled. When hosted, configure Mini Settings → Mini homepage URL to that verified HTTPS address. For a specific game's compact tracker, use the same origin with `?view=compact&game=the-last-hearth`.
+
 ## Files
 
 - `mini-browser.user.js` — universal Tampermonkey HUD
-- `examples/last-hearth/index.html` — separate **static** Last Hearth tracker demo, not a live database
+- `index.html` — Mini Library homepage and continuation save prototype
+- `examples/last-hearth/index.html` — older **static** Last Hearth tracker demo, not a live database
 
 ## Planned connections
 
