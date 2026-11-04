@@ -76,12 +76,54 @@ function starterGame(){
   ];
   return g;
 }
-function freshLibrary(){return {schema:CURRENT_SCHEMA,active:"the-last-hearth",games:[starterGame()],snapshots:[]};}
+
+const HUD_TYPES=[["stats","Stat tiles"],["text","Text / notes"],["list","Item list"],["pairs","Label / value rows"],["events","Event journal"]];
+const HUD_SOURCES=[
+  ["quickStats","Quick stats"],["checkpoint","Checkpoint"],["scene","Current scene"],
+  ["protagonist","Player character"],["world","World / canon"],["cast","NPCs / relationships"],
+  ["inventory","Inventory / possessions"],["finances","Finances / resources"],
+  ["quests","Goals / projects"],["rules","Game rules"],["summary","Summary"],
+  ["events","Journal events"],["custom","Custom notes"]
+];
+function defaultHudMenus(g){
+  if(g.id==="the-last-hearth"){
+    return [
+      {id:"overview",label:"Overview",widgets:[
+        {id:"w-stats",type:"stats",source:"quickStats",title:"At a glance"},
+        {id:"w-scene",type:"text",source:"scene",title:"Current scene"}]},
+      {id:"treasury",label:"Treasury",widgets:[
+        {id:"w-treasury",type:"text",source:"finances",title:"Cash and commitments"}]},
+      {id:"employees",label:"Employees",widgets:[
+        {id:"w-staff",type:"text",source:"cast",title:"Staff and villagers"}]},
+      {id:"projects",label:"Construction",widgets:[
+        {id:"w-quests",type:"list",source:"quests",title:"Active projects"}]},
+      {id:"inventory",label:"Inventory",widgets:[
+        {id:"w-inventory",type:"text",source:"inventory",title:"Materials and equipment"}]},
+      {id:"journal",label:"Journal",widgets:[
+        {id:"w-journal",type:"events",source:"events",title:"Story events"}]}
+    ];
+  }
+  return [
+    {id:"overview",label:"Overview",widgets:[
+      {id:"w-stats",type:"stats",source:"quickStats",title:"Quick status"},
+      {id:"w-scene",type:"text",source:"scene",title:"Current scene"}]},
+    {id:"journal",label:"Journal",widgets:[
+      {id:"w-events",type:"events",source:"events",title:"Recent events"}]}
+  ];
+}
+function normalizeHudGame(g){
+  if(!Array.isArray(g.hudMenus))g.hudMenus=defaultHudMenus(g);
+  if(!g.hudCompactMenuId)g.hudCompactMenuId=g.hudMenus[0]?.id||"overview";
+  return g;
+}
+
+function freshLibrary(){return {schema:CURRENT_SCHEMA,active:"the-last-hearth",games:[normalizeHudGame(starterGame())],snapshots:[]};}
 function load(){
   try{
     var saved=JSON.parse(localStorage.getItem(KEY)||"null");
     if(saved&&Array.isArray(saved.games)&&saved.schema===1){
       saved.snapshots=Array.isArray(saved.snapshots)?saved.snapshots:[];
+      saved.games=saved.games.map(normalizeHudGame);
       return saved;
     }
   }catch(e){}
@@ -98,8 +140,10 @@ var app=document.getElementById("app");
 function current(){return db.games.find(function(g){return g.id===active;})||db.games[0]||null;}
 function persist(){
   db.active=active;
-  try{localStorage.setItem(KEY,JSON.stringify(db));}
-  catch(e){showNotice("Browser storage is unavailable or full. Export a backup to protect your save.");}
+  try{
+    localStorage.setItem(KEY,JSON.stringify(db));
+    document.dispatchEvent(new CustomEvent("mini-library:changed"));
+  }catch(e){showNotice("Browser storage is unavailable or full. Export a backup to protect your save.");}
 }
 function id(){return "entry-"+Date.now()+"-"+Math.random().toString(36).slice(2,7);}
 function el(tag,className,text){
@@ -192,6 +236,72 @@ var fields=[
   ["canon","Characters & game rules",[["protagonist","Player character",true],["rules","Narration rules and boundaries",true],["world","World and permanent canon",true],["cast","Important NPCs and relationships",true]]],
   ["state","Current state",[["scene","Where the story is paused",true],["inventory","Inventory & known resources",true],["finances","Treasury, commitments, and debts",true],["quests","Projects, quests, and priorities",true]]]
 ];
+function renderHudMenus(main,g){
+  normalizeHudGame(g);
+  var details=el("details","editor");
+  details.append(el("summary","","Mini HUD · Customize your game menus"));
+  details.append(el("p","hint","Create different tabs for each adventure. Choose which saved game data each widget displays; Mini will build the panel from these settings. Changes save in this browser."));
+  var compactLabel=el("label","label","Menu used for compact tracker");
+  var compactSelect=el("select","field");
+  g.hudMenus.forEach(function(menu){
+    var option=el("option","",menu.label);
+    option.value=menu.id;compactSelect.append(option);
+  });
+  compactSelect.value=g.hudCompactMenuId;
+  compactSelect.onchange=function(){g.hudCompactMenuId=compactSelect.value;g.updatedAt=new Date().toISOString();persist();};
+  details.append(compactLabel,compactSelect);
+  g.hudMenus.forEach(function(menu,mi){
+    var holder=el("section","panel");
+    var bar=el("div","toolbar");
+    var name=el("input","field");
+    name.type="text";name.value=menu.label;name.placeholder="Menu title";
+    name.style.maxWidth="220px";
+    name.onchange=function(){menu.label=name.value.trim()||"Untitled";g.updatedAt=new Date().toISOString();persist();};
+    bar.append(name,button("Remove menu",function(){
+      if(g.hudMenus.length===1){alert("Keep at least one HUD menu.");return;}
+      g.hudMenus.splice(mi,1);
+      if(g.hudCompactMenuId===menu.id)g.hudCompactMenuId=g.hudMenus[0].id;
+      persist();render();
+    },"slim warn"));
+    holder.append(bar);
+    (menu.widgets||[]).forEach(function(widget,wi){
+      var widgetBar=el("div","two");
+      var typeLabel=el("label","label","Widget format");
+      var typeInput=el("select","field");
+      HUD_TYPES.forEach(function(t){var opt=el("option","",t[1]);opt.value=t[0];typeInput.append(opt);});
+      typeInput.value=widget.type||"text";
+      typeInput.onchange=function(){widget.type=typeInput.value;persist();};
+      typeLabel.append(typeInput);
+      var sourceLabel=el("label","label","Read from");
+      var sourceInput=el("select","field");
+      HUD_SOURCES.forEach(function(t){var opt=el("option","",t[1]);opt.value=t[0];sourceInput.append(opt);});
+      sourceInput.value=widget.source||"scene";
+      sourceInput.onchange=function(){widget.source=sourceInput.value;persist();};
+      sourceLabel.append(sourceInput);
+      widgetBar.append(typeLabel,sourceLabel);
+      var titleField=el("input","field");titleField.type="text";
+      titleField.value=widget.title||"";titleField.placeholder="Widget heading";
+      titleField.onchange=function(){widget.title=titleField.value;persist();};
+      var custom=el("textarea","field long");custom.placeholder="Custom notes (only used when Read from = Custom notes)";
+      custom.value=widget.body||"";
+      custom.oninput=function(){widget.body=custom.value;persist();};
+      holder.append(widgetBar,titleField,custom,button("Remove widget",function(){
+        menu.widgets.splice(wi,1);persist();render();
+      },"slim warn"),el("div","divider"));
+    });
+    holder.append(button("＋ Add widget",function(){
+      menu.widgets=menu.widgets||[];
+      menu.widgets.push({id:id(),type:"text",source:"scene",title:"New widget"});
+      persist();render();
+    },"slim"));
+    details.append(holder);
+  });
+  details.append(button("＋ Add menu",function(){
+    var idName=id();g.hudMenus.push({id:idName,label:"New menu",widgets:[]});
+    persist();render();
+  },"primary"));
+  main.append(details);
+}
 function renderGame(main){
   var g=current();if(!g)return emptyGamePanel(main);
   var actions=el("div","actions");
@@ -221,6 +331,7 @@ function renderGame(main){
     main.append(wrap);
   });
   var saved=el("div","status","Saved in this browser");saved.id="save-signal";main.append(saved);
+  renderHudMenus(main,g);
   renderJournal(main,g);
 }
 function emptyGamePanel(main){
@@ -332,7 +443,7 @@ function createGame(){
   var name=prompt("Name of your new game:","New Adventure");
   if(name===null)return;
   name=name.trim()||"New Adventure";
-  var g=emptyGame(name);db.games.push(g);active=g.id;persist();view="game";render();
+  var g=normalizeHudGame(emptyGame(name));db.games.push(g);active=g.id;persist();view="game";render();
 }
 function downloadJSON(payload,filename){
   var blob=new Blob([JSON.stringify(payload,null,2)],{type:"application/json"});
@@ -373,6 +484,7 @@ function importBackup(file){
       var game=data.game;game.id=game.id||("import-"+Date.now());
       var exists=db.games.findIndex(function(g){return g.id===game.id;});
       if(exists!==-1&& !confirm("Overwrite existing save for "+game.title+"?"))return;
+      normalizeHudGame(game);
       if(exists!==-1)db.games[exists]=game;else db.games.push(game);
       active=game.id;persist();view="game";render();return;
     }
