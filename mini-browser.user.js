@@ -79,7 +79,7 @@
     "#mini-browser-root.mb-compact .mb-resize-height,#mini-browser-root.mb-compact .mb-resize-bottom{display:none!important}",
     "#mini-browser-root.mb-resizing iframe{pointer-events:none}",
     "@media(max-width:600px){#mini-browser-root{left:50%;right:auto;top:8px;bottom:auto;transform:translateX(-50%);width:calc(100vw - 16px);height:min(460px,72dvh);max-width:calc(100vw - 16px);max-height:calc(100dvh - 16px);min-width:0;min-height:150px}#mini-browser-root .mb-resize-height{display:none!important}#mini-browser-root .mb-resize-bottom{display:block}#mini-browser-root .mb-resize-width{width:17px}#mini-browser-root .mb-resize-width::after{right:6px}#mini-browser-root .mb-head{padding:3px 4px;gap:2px}#mini-browser-root .mb-title{font-size:12px}}",
-    "html:not(.mb-mini-selected) #mini-browser-root{display:none!important}",
+    "html:not(.mb-mini-selected) #mini-browser-root,html.mb-mini-selected #mini-browser-root.mb-bar{display:none!important}",
     "html.mb-mini-selected #paths-monkey-root,html.mb-mini-selected #mizuhana-hud,html.mb-mini-selected #mizu-hud-switcher,html.mb-mini-selected #mizuhana-launcher{display:none!important}",
     "#mb-shared-launcher{position:fixed;top:max(8px,env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);z-index:2147483500;display:none;align-items:center;max-width:calc(100vw - 24px);font:14px/1.35 system-ui,sans-serif}",
     "#mb-shared-launcher .mb-pill{cursor:pointer;appearance:none;border:1px solid #b2787d;background:#281d27;color:#fff3e6;border-radius:999px;padding:10px 17px;min-height:43px;font:800 14px/1.35 system-ui,sans-serif;box-shadow:0 7px 22px #0008;max-width:calc(100vw - 24px);white-space:nowrap;touch-action:pan-y}",
@@ -225,7 +225,7 @@
   }
   function render(){
     state.mode=["open","compact","bar"].includes(state.mode)?state.mode:"open";
-    root.className=state.mode==="compact"?"mb-compact":"mb-open";
+    root.className=state.mode==="bar"?"mb-bar":state.mode==="compact"?"mb-compact":"mb-open";
     sizeWindow();
     libraryBtn.setAttribute("aria-pressed",String(state.view==="library"));
     compactBtn.setAttribute("aria-pressed",String(state.mode==="compact"));
