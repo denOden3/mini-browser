@@ -2,7 +2,7 @@
 
 A universal, lightweight website HUD for chat-first roleplaying games. Mini displays each game's own website and does not replace the specialized Mizuhana or Paths to Immortality HUDs.
 
-## v0.3.3 — connected Mini homepage
+## v0.3.4 — diagnose blocked website embedding
 
 **Header controls (left → right):**
 - **Mini Browser title** — minimize the panel into the shared top-center HUD capsule. Use the shared capsule to switch between Mini, Paths and Mizuhana.
@@ -50,6 +50,14 @@ Mini now includes default links to the hosted GitHub Pages homepage:
 On an existing Tampermonkey installation, missing URLs are filled automatically without overwriting existing custom links. **Save & open library** saves the settings then displays the homepage, rather than silently returning to the game view. The four-square button opens the library at any time.
 
 **Data warning:** The current Mini Library still stores story saves in local browser storage, not yet Supabase. The same site's data may not be shared between a standalone tab and a ChatGPT-embedded iframe in browsers that partition third-party storage. Use the backup/export feature and do not rely on it as a cloud-synced record.
+
+## Troubleshooting a blank Mini webpage
+
+Mini displays external game websites through an iframe. ChatGPT's framing policy, the destination website's frame headers, or browser restrictions can prevent an iframe from rendering, even when the same URL works in a normal tab.
+
+Mini v0.3.4 includes a light readiness handshake for its own GitHub Pages homepage. If the hosted Mini page has not signaled readiness within 6.5 seconds, Mini stops showing an empty white iframe and displays its **built-in game library**, including an **Open website in a tab** and **Retry inside Mini** option. This is a fallback, not a bypass for browser security settings.
+
+To diagnose: first open `https://denoden3.github.io/mini-browser/` directly. If it works in a regular tab but not Mini, embedded framing or third-party browser restrictions are the likely cause. Never disable ChatGPT security headers to work around it. Future Mini panels can render Supabase-backed data natively in the userscript rather than requiring cross-origin iframe embedding.
 
 ## Mini homepage and game saves (first prototype)
 
