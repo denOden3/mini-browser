@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Mini Browser — Universal Roleplay HUD
 // @namespace    mini-browser.chat-rpg
-// @version      0.3.3
+// @version      0.3.4
 // @description  Universal mini game tracker with shared HUD picker and resizable website panel.
 // @updateURL    https://github.com/denOden3/mini-browser/raw/main/mini-browser.user.js
 // @downloadURL  https://github.com/denOden3/mini-browser/raw/main/mini-browser.user.js
@@ -208,6 +208,51 @@
   }
   window.addEventListener("resize",sizeWindow);
 
+  // GitHub Pages may load in a normal tab but be blocked as an iframe by
+  // ChatGPT or browser security settings. Owned pages send a harmless
+  // readiness signal; if none arrives, never leave the panel blank.
+  let embedCheck=null;
+  const failedEmbeds=new Set();
+  const isMiniSite=url=>{
+    try{const u=new URL(url);return u.origin==="https://denoden3.github.io"&&
+      u.pathname.startsWith("/mini-browser/");}catch(_){return false;}
+  };
+  function miniFallback(url,library=false){
+    const panel=el("div","mb-empty");
+    if(library){
+      panel.classList.add("mb-library");
+      panel.append(el("strong","","✦ Mini Library"),
+        el("div","","The website could not be displayed inside ChatGPT. Your saved game shortcuts still work here."));
+      for(const g of state.sites){
+        const entry=el("button","",g.name);
+        entry.type="button";
+        entry.onclick=()=>{state.selected=g.id;state.view="site";save();render();};
+        panel.append(entry);
+      }
+    }else{
+      panel.append(el("strong","","Webpage couldn't display here"),
+        el("div","","The website may be blocked from loading inside ChatGPT. You can still open it in a normal browser tab."));
+    }
+    const openPage=el("button","","↗ Open website in a tab");
+    openPage.type="button";openPage.onclick=()=>window.open(url,"_blank","noopener,noreferrer");
+    const retry=el("button","","↻ Retry inside Mini");
+    retry.type="button";retry.onclick=()=>{failedEmbeds.delete(url);showSite();};
+    panel.append(openPage,retry);
+    if(!library){
+      const back=el("button","","▦ Saved games");
+      back.type="button";back.onclick=()=>{
+        state.view="library";save();render();
+      };
+      panel.append(back);
+    }
+    content.replaceChildren(panel);
+  }
+  window.addEventListener("message",event=>{
+    if(event.origin!=="https://denoden3.github.io"||
+      !event.data||event.data.type!=="mini-browser:page-ready")return;
+    if(!embedCheck||event.source!==embedCheck.frame.contentWindow)return;
+    embedCheck.ready=true;
+  });
   let settingsVisible=false,editing=state.selected;
   function activeUrl(){
     if(state.view==="library")return valid(state.homeUrl)?state.homeUrl:"";
@@ -216,11 +261,23 @@
     return valid(url)?url:"";
   }
   function frame(url,label){
+    if(failedEmbeds.has(url)){miniFallback(url,state.view==="library");return;}
     const existing=content.querySelector("iframe");
     if(existing&&existing.getAttribute("src")===url)return;
     const iframe=el("iframe");iframe.title=label;iframe.src=url;
-    iframe.loading="lazy";iframe.referrerPolicy="strict-origin-when-cross-origin";
+    iframe.loading="eager";iframe.referrerPolicy="strict-origin-when-cross-origin";
     content.replaceChildren(iframe);
+    if(isMiniSite(url)){
+      const check={frame:iframe,ready:false};
+      embedCheck=check;
+      setTimeout(()=>{
+        if(embedCheck!==check||check.ready||!iframe.isConnected)return;
+        failedEmbeds.add(url);
+        miniFallback(url,state.view==="library");
+      },6500);
+    }else{
+      embedCheck=null;
+    }
   }
   function showSite(){
     if(state.view==="library"){
