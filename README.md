@@ -2,7 +2,7 @@
 
 A universal, lightweight website HUD for chat-first roleplaying games. Mini displays each game's own website and does not replace the specialized Mizuhana or Paths to Immortality HUDs.
 
-## v0.3.2 — sketch-based UI
+## v0.3.3 — connected Mini homepage
 
 **Header controls (left → right):**
 - **Mini Browser title** — minimize the panel into the shared top-center HUD capsule. Use the shared capsule to switch between Mini, Paths and Mizuhana.
@@ -41,6 +41,15 @@ The repository root now contains **`index.html`**, the first Mini Library homepa
 **Storage scope:** This version stores state in the **browser's local storage**, not in GitHub, ChatGPT, or Supabase. It won't automatically sync between devices or update after each narration. In an embedded iframe, browser third-party storage restrictions can prevent or partition saves; keep JSON backups until we implement authenticated cloud storage. Treat the preloaded Last Hearth facts as an editable draft rather than an automatically verified current game state.
 
 **Hosting:** This source file is committed, but an accessible hosted homepage URL must be established before Mini's iframe can display it. The repository is private, so do not assume that GitHub Pages is available or enabled. When hosted, configure Mini Settings → Mini homepage URL to that verified HTTPS address. For a specific game's compact tracker, use the same origin with `?view=compact&game=the-last-hearth`.
+
+Mini now includes default links to the hosted GitHub Pages homepage:
+- Library: `https://denoden3.github.io/mini-browser/`
+- The Last Hearth full save: `https://denoden3.github.io/mini-browser/?game=the-last-hearth`
+- The Last Hearth compact tracker: `https://denoden3.github.io/mini-browser/?game=the-last-hearth&view=compact`
+
+On an existing Tampermonkey installation, missing URLs are filled automatically without overwriting existing custom links. **Save & open library** saves the settings then displays the homepage, rather than silently returning to the game view. The four-square button opens the library at any time.
+
+**Data warning:** The current Mini Library still stores story saves in local browser storage, not yet Supabase. The same site's data may not be shared between a standalone tab and a ChatGPT-embedded iframe in browsers that partition third-party storage. Use the backup/export feature and do not rely on it as a cloud-synced record.
 
 ## Mini homepage and game saves (first prototype)
 
