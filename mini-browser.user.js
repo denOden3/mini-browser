@@ -1,12 +1,14 @@
 // ==UserScript==
 // @name         Mini Browser — Universal Roleplay HUD
 // @namespace    mini-browser.chat-rpg
-// @version      0.3.4
+// @version      0.4.0
 // @description  Universal mini game tracker with shared HUD picker and resizable website panel.
 // @updateURL    https://github.com/denOden3/mini-browser/raw/main/mini-browser.user.js
 // @downloadURL  https://github.com/denOden3/mini-browser/raw/main/mini-browser.user.js
 // @match        https://chatgpt.com/*
 // @match        https://chat.openai.com/*
+// @match        https://denoden3.github.io/mini-browser/*
+// @grant        GM_addValueChangeListener
 // @grant        GM_getValue
 // @grant        GM_setValue
 // @run-at       document-idle
@@ -16,6 +18,32 @@
   "use strict";
   if (document.getElementById("mini-browser-root")) return;
   const KEY = "mini-browser-state-v1";
+  const BRIDGE_KEY = "mini-library-bridge-v1";
+  const LIBRARY_KEY = "mini-library-v1";
+  // The companion script runs on the public Mini Library page as well.
+  // It copies browser-local saves to Tampermonkey storage in this browser.
+  // No story content is sent to a third-party server.
+  if (location.hostname === "denoden3.github.io" &&
+      location.pathname.startsWith("/mini-browser/")) {
+    let lastSent = "";
+    function copyLibraryToMini() {
+      try {
+        const raw = localStorage.getItem(LIBRARY_KEY);
+        if(!raw || raw === lastSent || raw.length > 3000000) return;
+        const data = JSON.parse(raw);
+        if(!data || data.schema !== 1 || !Array.isArray(data.games)) return;
+        GM_setValue(BRIDGE_KEY,raw);
+        lastSent = raw;
+      } catch(_) {}
+    }
+    document.addEventListener("mini-library:changed",copyLibraryToMini);
+    window.addEventListener("storage",event=>{
+      if(event.key===LIBRARY_KEY) copyLibraryToMini();
+    });
+    document.addEventListener("DOMContentLoaded",copyLibraryToMini,{once:true});
+    copyLibraryToMini();
+    return;
+  }
   const MINI_HOME = "https://denoden3.github.io/mini-browser/";
   const HEARTH_FULL = MINI_HOME + "?game=the-last-hearth";
   const HEARTH_COMPACT = MINI_HOME + "?game=the-last-hearth&view=compact";
@@ -76,6 +104,30 @@
     "#mini-browser-root .mb-library h2{font-size:16px;margin:0}",
     "#mini-browser-root .mb-library p{font-size:12px;color:#776b5d;margin:0 0 6px}",
     "#mini-browser-root .mb-library button{text-align:left;padding:11px 12px}",
+    "#mini-browser-root .mb-native{padding:12px;display:flex;flex-direction:column;gap:10px;background:#faf7f0;min-height:100%;color:#342c24}",
+    "#mini-browser-root .mb-native h2{font-family:Georgia,serif;font-size:18px;margin:0}",
+    "#mini-browser-root .mb-native p{margin:3px 0;color:#756859;font-size:12px;line-height:1.5;white-space:pre-wrap}",
+    "#mini-browser-root .mb-native .mb-game{display:flex;gap:9px;align-items:center;width:100%;text-align:left;padding:12px;background:#fffdfa;color:#3d3027;border:1px solid #ded3c4;border-radius:9px}",
+    "#mini-browser-root .mb-native .mb-game:focus-visible,#mini-browser-root .mb-native .mb-game:hover{background:#efe6d8}",
+    "#mini-browser-root .mb-native .mb-game-icon{font-size:24px;min-width:28px}",
+    "#mini-browser-root .mb-native .mb-game b,#mini-browser-root .mb-native .mb-game small{display:block}",
+    "#mini-browser-root .mb-native .mb-game small{font-size:10px;color:#867766;margin-top:4px}",
+    "#mini-browser-root .mb-native .mb-nav{display:flex;gap:5px;max-width:100%;overflow-x:auto;padding-bottom:5px;scrollbar-width:thin}",
+    "#mini-browser-root .mb-native .mb-nav button{white-space:nowrap;border:1px solid #c6b9a6;border-radius:8px;background:#fffcf7;color:#4e4032;padding:8px 10px;min-height:32px;font-weight:600}",
+    "#mini-browser-root .mb-native .mb-nav button[aria-selected=true]{background:#5c4c3a;color:white;border-color:#5c4c3a}",
+    "#mini-browser-root .mb-native .mb-widget{background:#fffdf9;border:1px solid #e1d9cb;border-radius:10px;padding:11px;min-width:0}",
+    "#mini-browser-root .mb-native .mb-widget h3{font-size:12px;margin:0 0 7px;color:#55432e}",
+    "#mini-browser-root .mb-native .mb-widget .mb-body{font-size:12px;line-height:1.55;white-space:pre-wrap;overflow-wrap:anywhere}",
+    "#mini-browser-root .mb-native .mb-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(85px,1fr));gap:6px}",
+    "#mini-browser-root .mb-native .mb-stat{padding:9px;border-radius:8px;background:#eee8dc;min-width:0}",
+    "#mini-browser-root .mb-native .mb-stat b,#mini-browser-root .mb-native .mb-stat small{display:block;overflow-wrap:anywhere}",
+    "#mini-browser-root .mb-native .mb-stat b{font-size:15px}",
+    "#mini-browser-root .mb-native .mb-stat small{font-size:10px;color:#766859}",
+    "#mini-browser-root .mb-native .mb-item{padding:7px 0;border-bottom:1px solid #eee8df;font-size:12px;line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere}",
+    "#mini-browser-root .mb-native .mb-item:last-child{border:0}",
+    "#mini-browser-root .mb-native .mb-muted{font-size:10px;color:#857765}",
+    "#mini-browser-root .mb-native .mb-link{border:1px solid #b3a184;background:#f3e8d8;color:#493928;border-radius:7px;padding:9px 10px;font-size:12px;font-weight:600;text-align:center}",
+    "#mini-browser-root .mb-native .mb-subhead{font-size:10px;color:#8f7c60;text-transform:uppercase;letter-spacing:.07em}",
     "#mini-browser-root .mb-settings{display:none;flex:1;overflow:auto;padding:12px;background:#faf7f0;flex-direction:column;gap:9px}",
     "#mini-browser-root .mb-settings label{display:flex;flex-direction:column;gap:4px;font-weight:650}",
     "#mini-browser-root .mb-settings input{min-width:0;padding:8px;border:1px solid #b7a994;border-radius:6px;background:white;color:inherit}",
@@ -254,8 +306,190 @@
     embedCheck.ready=true;
   });
   let settingsVisible=false,editing=state.selected;
+
+  // Each game owns its own HUD menu configuration, edited on the Mini website.
+  // Mini only knows generic rendering primitives. Nothing here is inn-specific.
+  const FIELD_NAMES=new Set([
+    "quickStats","checkpoint","scene","protagonist","world","cast",
+    "inventory","finances","quests","rules","summary","events","custom"
+  ]);
+  const TYPES=new Set(["stats","text","list","pairs","events"]);
+  const nativeState={data:null,error:"",lastRaw:""};
+  const readSaves=()=>{
+    try{
+      const raw=GM_getValue(BRIDGE_KEY,"");
+      if(!raw||raw===nativeState.lastRaw)return !!nativeState.data;
+      const parsed=JSON.parse(raw);
+      if(parsed.schema!==1||!Array.isArray(parsed.games))return false;
+      nativeState.lastRaw=raw;
+      nativeState.data=parsed;
+      return true;
+    }catch(_){return false;}
+  };
+  readSaves();
+  function games(){return nativeState.data?.games||[];}
+  function selectedGame(){
+    return games().find(g=>g.id===state.selected||
+      (state.selected==="hearth"&&g.id==="the-last-hearth"))||games()[0]||null;
+  }
+  function savedGameURL(g){
+    return MINI_HOME+"?game="+encodeURIComponent(g.id);
+  }
+  const safeText=value=>typeof value==="string"?value.slice(0,22000):"";
+  function gameMenus(g){
+    const menus=Array.isArray(g.hudMenus)?g.hudMenus.slice(0,20):[];
+    if(menus.length)return menus.filter(m=>m&&typeof m.label==="string").map(m=>({
+      id:String(m.id||m.label).slice(0,100),
+      label:m.label.slice(0,60),
+      widgets:Array.isArray(m.widgets)?m.widgets.slice(0,30):[]
+    }));
+    return [{id:"overview",label:"Overview",widgets:[
+      {type:"stats",source:"quickStats",title:"Quick status"},
+      {type:"text",source:"scene",title:"Current scene"}]}];
+  }
+  function nativeHeader(container,headline,subtitle){
+    container.append(el("h2","",headline));
+    if(subtitle)container.append(el("p","",subtitle));
+  }
+  function nativeLink(label,url){
+    const b=el("button","mb-link",label);
+    b.type="button";
+    b.onclick=()=>window.open(url,"_blank","noopener,noreferrer");
+    return b;
+  }
+  function renderWidget(parent,game,widget){
+    if(!widget||!TYPES.has(widget.type)||!FIELD_NAMES.has(widget.source))return;
+    const box=el("section","mb-widget");
+    if(widget.title)box.append(el("h3","",safeText(widget.title).slice(0,80)));
+    const source=widget.source;
+    const value=source==="custom"?safeText(widget.body):
+      source==="events"?"":safeText(game[source]);
+    if(widget.type==="events"){
+      const events=Array.isArray(game.events)?game.events.slice(-12).reverse():[];
+      for(const event of events){
+        const entry=el("div","mb-item");
+        entry.append(el("small","mb-muted",safeText(event.at)));
+        entry.append(el("div","mb-body",safeText(event.text)));
+        box.append(entry);
+      }
+      if(!events.length)box.append(el("p","","No journal entries yet."));
+    }else if(widget.type==="stats"){
+      const grid=el("div","mb-stats");
+      value.split(/\r?\n/).filter(Boolean).slice(0,12).forEach(line=>{
+        const at=line.indexOf("|");
+        const label=at<0?"Stat":line.slice(0,at).trim();
+        const val=at<0?line.trim():line.slice(at+1).trim();
+        const item=el("div","mb-stat");
+        item.append(el("b","",val),el("small","",label));
+        grid.append(item);
+      });
+      box.append(grid);
+    }else if(widget.type==="list"){
+      value.split(/\r?\n/).filter(Boolean).slice(0,45).forEach(line=>{
+        box.append(el("div","mb-item",line.replace(/^[•*\\-]\s*/,"")));
+      });
+    }else if(widget.type==="pairs"){
+      value.split(/\r?\n/).filter(Boolean).slice(0,40).forEach(line=>{
+        const at=line.includes("|")?line.indexOf("|"):line.indexOf(":");
+        const row=el("div","mb-item");
+        if(at===-1)row.textContent=line;
+        else{
+          row.append(el("b","",line.slice(0,at).trim()+": "));
+          row.append(el("span","",line.slice(at+1).trim()));
+        }
+        box.append(row);
+      });
+    }else{
+      box.append(el("div","mb-body",value||"No details recorded yet."));
+    }
+    parent.append(box);
+  }
+  function nativeLibrary(){
+    const page=el("div","mb-native");
+    nativeHeader(page,"✦ Mini Library","Choose a saved adventure. Every game can have its own menus.");
+    games().forEach(g=>{
+      const button=el("button","mb-game");
+      const info=el("span");
+      info.append(el("b","",safeText(g.title)||"Unnamed adventure"),
+        el("small","",safeText(g.checkpoint)||"New adventure"));
+      button.append(el("span","mb-game-icon",safeText(g.icon)||"📖"),info);
+      button.onclick=()=>{
+        state.selected=g.id;
+        state.view="site";
+        save();render();
+      };
+      page.append(button);
+    });
+    page.append(nativeLink("↗ Edit games, menus & story saves on website",MINI_HOME));
+    page.append(el("span","mb-muted","Local browser sync · Not a cloud database yet."));
+    content.replaceChildren(page);
+  }
+  function nativeGame(){
+    const g=selectedGame();
+    if(!g){nativeLibrary();return;}
+    const menus=gameMenus(g);
+    const page=el("div","mb-native");
+    const meta=safeText(g.checkpoint)||"Saved adventure";
+    if(state.mode==="compact"){
+      const menu=menus.find(m=>m.id===g.hudCompactMenuId)||menus[0];
+      nativeHeader(page,(g.icon||"📖")+" "+safeText(g.title),meta);
+      (menu?.widgets||[]).forEach(w=>renderWidget(page,g,w));
+    }else{
+      nativeHeader(page,(g.icon||"📖")+" "+safeText(g.title),meta);
+      const nav=el("nav","mb-nav");
+      const savedTabs=state.nativeTabs||{};
+      const activeId=menus.some(m=>m.id===savedTabs[g.id])?savedTabs[g.id]:menus[0]?.id;
+      menus.forEach(m=>{
+        const tab=el("button","",m.label);
+        tab.type="button";
+        tab.setAttribute("aria-selected",String(m.id===activeId));
+        tab.onclick=()=>{
+          state.nativeTabs={...savedTabs,[g.id]:m.id};
+          save();render();
+        };
+        nav.append(tab);
+      });
+      page.append(nav);
+      const activeMenu=menus.find(m=>m.id===activeId)||menus[0];
+      (activeMenu?.widgets||[]).forEach(w=>renderWidget(page,g,w));
+      page.append(nativeLink("↗ Edit this game / Generate prompt",savedGameURL(g)));
+    }
+    content.replaceChildren(page);
+  }
+  function nativeNoSync(){
+    const page=el("div","mb-native");
+    nativeHeader(page,"Mini Library","Your games will appear here after Mini receives their saved data.");
+    page.append(el("p","",
+      "Open the Mini Library website in this same browser once. The companion userscript will copy the saved games locally, so Mini can display their individual menus without embedding webpages."));
+    page.append(nativeLink("↗ Open Mini Library",MINI_HOME));
+    page.append(el("span","mb-muted","Requires the updated Mini userscript to run on both ChatGPT and Mini Library. Changes made in a different browser or device will not sync yet."));
+    content.replaceChildren(page);
+  }
+  function showNative(){
+    readSaves();
+    if(!games().length){nativeNoSync();return;}
+    if(state.view==="library")nativeLibrary();
+    else nativeGame();
+  }
+  if(typeof GM_addValueChangeListener==="function"){
+    GM_addValueChangeListener(BRIDGE_KEY,()=>{
+      nativeState.lastRaw="";
+      readSaves();
+      if(state.miniSelected&&!settingsVisible)render();
+    });
+  }
+  document.addEventListener("visibilitychange",()=>{
+    if(document.visibilityState==="visible"){
+      nativeState.lastRaw="";
+      readSaves();
+      if(state.miniSelected&&!settingsVisible)render();
+    }
+  });
+
   function activeUrl(){
     if(state.view==="library")return valid(state.homeUrl)?state.homeUrl:"";
+    const g=selectedGame();
+    if(g) return savedGameURL(g);
     const s=site();
     const url=state.mode==="compact"&&valid(s?.compactUrl)?s.compactUrl:s?.url;
     return valid(url)?url:"";
@@ -280,6 +514,8 @@
     }
   }
   function showSite(){
+    showNative();
+    return;
     if(state.view==="library"){
       if(valid(state.homeUrl)){frame(state.homeUrl,"Mini game-library website");return;}
       const page=el("div","mb-library");
