@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Mini Browser — Universal Roleplay HUD
 // @namespace    mini-browser.chat-rpg
-// @version      0.3.2
+// @version      0.3.3
 // @description  Universal mini game tracker with shared HUD picker and resizable website panel.
 // @updateURL    https://github.com/denOden3/mini-browser/raw/main/mini-browser.user.js
 // @downloadURL  https://github.com/denOden3/mini-browser/raw/main/mini-browser.user.js
@@ -16,9 +16,12 @@
   "use strict";
   if (document.getElementById("mini-browser-root")) return;
   const KEY = "mini-browser-state-v1";
+  const MINI_HOME = "https://denoden3.github.io/mini-browser/";
+  const HEARTH_FULL = MINI_HOME + "?game=the-last-hearth";
+  const HEARTH_COMPACT = MINI_HOME + "?game=the-last-hearth&view=compact";
   const defaults = {mode:"open",miniSelected:false,view:"site",
-    selected:"hearth",homeUrl:"",compactHeight:185,
-    sites:[{id:"hearth",name:"The Last Hearth",url:"",compactUrl:""}],
+    selected:"hearth",homeUrl:MINI_HOME,compactHeight:185,
+    sites:[{id:"hearth",name:"The Last Hearth",url:HEARTH_FULL,compactUrl:HEARTH_COMPACT}],
     windowSize:{width:328,height:490}};
   function read() {
     try {
@@ -30,6 +33,14 @@
     }catch(_){return {...defaults};}
   }
   let state=read();
+  // Migrate existing installations non-destructively: fill missing Mini/Last Hearth
+  // links, but leave custom game links and other saved preferences intact.
+  if (!state.homeUrl) state.homeUrl=MINI_HOME;
+  state.sites=state.sites.map(game=>{
+    if(game.id!=="hearth"&&game.name!=="The Last Hearth")return game;
+    return {...game,url:game.url||HEARTH_FULL,
+      compactUrl:game.compactUrl||HEARTH_COMPACT};
+  });
   const save=()=>GM_setValue(KEY,JSON.stringify(state));
   const el=(tag,cls,text)=>{
     const e=document.createElement(tag);
@@ -130,7 +141,7 @@
   heightLabel.append(heightField,heightPreview);settings.append(heightLabel);
   const actions=el("div","mb-actions");
   const add=el("button","","New game");
-  const store=el("button","","Save");
+  const store=el("button","","Save & open library");
   const remove=el("button","","Remove");
   actions.append(add,store,remove);
   settings.append(actions,el("p","mb-note",
@@ -285,6 +296,7 @@
     }else{
       const id="site-"+Date.now();state.sites.push({id,name,url,compactUrl});state.selected=id;
     }
+    state.view="library";
     save();showSettings(false);
   };
   remove.onclick=()=>{
