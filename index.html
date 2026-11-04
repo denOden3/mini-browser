@@ -434,5 +434,14 @@ function render(){
 persist();render();
 })();
 </script>
+<!-- Mini HUD readiness handshake: sends no story data or credentials. -->
+<script>
+(function () {
+  if (window.parent === window) return;
+  var app = document.getElementById("app");
+  if (!app || !app.children.length) return;
+  window.parent.postMessage({type:"mini-browser:page-ready",version:1}, "*");
+})();
+</script>
 </body>
 </html>
