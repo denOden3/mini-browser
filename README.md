@@ -1,67 +1,41 @@
 # Mini Browser 🎲
 
-A lightweight, reusable mini-browser HUD for chat-first roleplaying games.
+A universal, lightweight website HUD for chat-first roleplaying games. Mini displays each game's own website and does not replace the specialized Mizuhana or Paths to Immortality HUDs.
 
-**Design principle:** Mini displays game websites. It does **not** duplicate the game's inventory, finances, or other source-of-truth data, and it does **not** read ChatGPT narration automatically.
+## v0.3.0 — sketch-based UI
 
-## Current prototype (v0.2.2)
+**Header controls (left → right):**
+- **Mini Browser title** — minimize the panel into the shared top-center HUD capsule. Use the shared capsule to switch between Mini, Paths and Mizuhana.
+- **▦ Four squares** — open the Mini game library. Until we build its website, Mini displays a built-in list of saved games. Later the Library button can open a configured homepage URL.
+- **↗ External arrow** — open the currently displayed website in a separate browser tab; disabled when no website URL exists.
+- **▭ Compact** — show a short game tracker. Each game can provide its own compact tracker URL; if not configured, Mini shows the regular site in the shorter frame.
+- **□ Expanded** — show a resizable website panel.
+- **☼ Settings** — edit the future Mini homepage URL, save new game shortcuts, set the current game’s full/compact webpage URLs, or remove a shortcut.
 
-- `mini-browser.user.js` — Tampermonkey userscript that overlays ChatGPT.
-- `examples/last-hearth/index.html` — independent, static Last Hearth tracker demo.
-- Three viewing modes: **Full** (embedded website), **Compact** (short game-summary viewport), and **Title only**.
-- The Mini Browser option is injected into the **existing Paths/Mizuhana top HUD switcher menus**. Inactive Mini adds no floating panel. When minimized, Mini uses a single top capsule in the same position as the other HUDs. No changes are made to the Paths or Mizuhana userscripts.
-- On desktop, expanded and compact Mini dock over the **left ChatGPT sidebar**, keeping the composer and narration unobstructed. The title-only capsule remains at the top center. On narrow mobile screens, Mini uses available screen width.
-- Desktop resize grips: **drag the right border to change width** and **drag the top border to change expanded height** (the window remains bottom-docked). Dimensions are saved between reloads and HUD switches. Keyboard users can focus a grip and use arrow keys. Mobile keeps responsive dimensions.
-- Add, rename, remove, and select game-website shortcuts.
-- Website shortcuts persist locally in Tampermonkey.
-- External-link action opens the game website in its own browser tab.
+**Positioning and resizing:**
+- On **desktop**, Mini floats over the left ChatGPT sidebar, away from the composer. Drag its **right edge** for width, or **top edge** for expanded height. The dimensions are saved.
+- On **mobile**, Mini appears **top-center** rather than at the bottom. In expanded mode, drag the **right edge** for width or the **bottom edge** for height. Its center stays aligned while resizing.
+- Compact mode has a deliberately short height; it still allows desktop width resizing.
+- The title minimizes directly to the shared capsule, rather than cycling through display sizes.
 
-The Last Hearth is the **first test case**. Mizuhana and Paths to Immortality are intentionally not modified or integrated.
+## Install / update
 
-## Install the HUD
+1. Install **Tampermonkey** and enable it for ChatGPT.
+2. Open [the latest userscript](https://github.com/denOden3/mini-browser/raw/main/mini-browser.user.js) and approve Tampermonkey's Install/Update screen.
+3. Reload ChatGPT, open the shared top-center HUD menu (long-press/right-click), and choose **◈ Mini Browser**.
+4. Use **▦** to browse saved games or **☼** to configure website links.
 
-1. Install and enable the **Tampermonkey** browser extension.
-2. Open the raw `mini-browser.user.js` file on GitHub, copy its contents, and create a new Tampermonkey userscript by pasting that code.
-3. Save the userscript and open or reload `https://chatgpt.com/`.
-4. With the other HUDs installed, first locate their **top-center HUD capsule**. Mini stays hidden until you choose it, so it won't clutter the screen.
-5. Collapse Paths/Mizuhana to their top capsule (if necessary), then **long-press or right-click the capsule** and select **◈ Mini Browser**. If no other HUD is loaded, Mini provides its own top capsule.
-6. When Mini opens, click **⚙** to set the HTTPS address of a **hosted** tracker website.
-7. Click the Mini title to cycle between Full → Compact → Title only. The **▤** control toggles Compact view directly. In title-only mode, **Mini Browser** appears as a top capsule; long-press/right-click that capsule to switch back to Paths or Mizuhana.
-8. On desktop, hover over the **right edge** to see a vertical grip and drag sideways to resize. Drag the **top edge** up/down to resize height. Mini remembers both dimensions.
+With this **private GitHub repository**, Tampermonkey's automatic update checks may not always authenticate. The link above remains the preferred one-click update route when your browser recognizes the userscript.
 
-> Opening the demo HTML directly from your computer is suitable for previewing the example page, but the Mini HUD accepts HTTPS websites (or local development servers), not `file://` paths. We'll deploy a hosted tracker later.
+## Files
 
-## Updating an existing installation
+- `mini-browser.user.js` — universal Tampermonkey HUD
+- `examples/last-hearth/index.html` — separate **static** Last Hearth tracker demo, not a live database
 
-Tampermonkey must install the new version before changes appear locally. With this **private** GitHub repository, automatic `@updateURL` checks may fail due to authentication. If the version does not update automatically, open `mini-browser.user.js` on GitHub, copy its full contents, replace the script body in Tampermonkey's editor, save, then reload ChatGPT. Do not create a second installed copy of the same script.
+## Planned connections
 
-## How this is meant to evolve
+Mini will eventually open a hosted library website and each game's tracker. The Last Hearth is our first integration; **Mizuhana and Paths to Immortality are untouched**. Database updates from narration are not yet automatic. Each game needs an authorized game-state writer, an event history, and a way for its webpage to read live data.
 
-```text
-Our roleplay in ChatGPT
-        ↓
-Verified game-state event (unique ID; confirmed values only)
-        ↓
-Game-specific database (planned: Supabase)
-        ↓
-Game-specific tracker webpage
-        ↓
-Mini Browser embedded frame
-```
+## Safety and compatibility
 
-The game tracker webpage owns the visual menus and compact-mode design. The HUD merely displays it. This lets different games have different panels while using a single universal browser.
-
-**Database synchronization is not implemented yet.** A narration turn does not automatically create a record in Supabase. This requires an authorized write integration or a separately built bridge, with duplicate prevention, event history and error reporting.
-
-## Security and limitations
-
-- Add only websites you trust to the Mini HUD.
-- Some websites prevent iframe embedding through `X-Frame-Options` or CSP `frame-ancestors`; use **↗** to open those sites directly.
-- Embedded login may be blocked by browser third-party-cookie restrictions.
-- Do not put service-role keys or other private database credentials in a public website or userscript.
-- The example tracker contains static demonstration data and does not update on its own.
-- Project remains private while we experiment.
-
-## Next milestone
-
-Build and host the actual Last Hearth tracker website, then design a separate game database and a safe narration-to-database update path.
+Some webpages block iframe embedding, and some logins don't function inside frames. Use ↗ for those sites. Mini stores its shortcuts locally in Tampermonkey and doesn't read roleplay narration. Keep database service-role keys and other private credentials outside browser scripts.
