@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Mini Browser — Universal Roleplay HUD
 // @namespace    mini-browser.chat-rpg
-// @version      0.3.0
+// @version      0.3.1
 // @description  Universal mini game tracker with shared HUD picker and resizable website panel.
 // @updateURL    https://github.com/denOden3/mini-browser/raw/main/mini-browser.user.js
 // @downloadURL  https://github.com/denOden3/mini-browser/raw/main/mini-browser.user.js
@@ -17,7 +17,7 @@
   if (document.getElementById("mini-browser-root")) return;
   const KEY = "mini-browser-state-v1";
   const defaults = {mode:"open",miniSelected:false,view:"site",
-    selected:"hearth",homeUrl:"",
+    selected:"hearth",homeUrl:"",compactHeight:185,
     sites:[{id:"hearth",name:"The Last Hearth",url:"",compactUrl:""}],
     windowSize:{width:328,height:490}};
   function read() {
@@ -48,13 +48,14 @@
   const styles=[
     "#mini-browser-root,#mini-browser-root *{box-sizing:border-box}",
     "#mini-browser-root{position:fixed;left:12px;bottom:16px;right:auto;top:auto;z-index:2147483400;width:328px;height:490px;min-width:260px;max-width:calc(100vw - 24px);min-height:150px;max-height:calc(100dvh - 32px);font:13px/1.4 system-ui,sans-serif;color:#2e2924;background:#faf7f0;border:1px solid #a69a87;border-radius:12px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 10px 28px #14100a44}",
-    "#mini-browser-root.mb-compact{height:185px!important}",
+    "#mini-browser-root.mb-compact{min-height:140px}",
     "#mini-browser-root button,#mini-browser-root input{font:inherit}",
     "#mini-browser-root button{cursor:pointer}",
     "#mini-browser-root .mb-head{display:flex;align-items:center;gap:3px;background:#e9dfcf;height:45px;min-height:45px;padding:4px 6px;border-bottom:1px solid #c7b8a4}",
     "#mini-browser-root .mb-title{border:0;background:transparent;color:inherit;font-weight:750;flex:1 1 auto;min-width:0;text-align:left;padding:5px 3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
     "#mini-browser-root .mb-icon{border:0;background:transparent;color:inherit;flex:none;width:30px;height:32px;padding:4px;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:19px;line-height:1}",
     "#mini-browser-root .mb-icon:hover,#mini-browser-root .mb-icon:focus-visible{background:#d7cbb8}",
+    "#mini-browser-root .mb-icon svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.8}",
     "#mini-browser-root .mb-icon[aria-pressed=true]{background:#d7cbb8;box-shadow:inset 0 -2px #6c5940}",
     "#mini-browser-root .mb-content{flex:1;min-height:0;overflow:auto;background:white}",
     "#mini-browser-root iframe{display:block;width:100%;height:100%;border:0}",
@@ -78,7 +79,7 @@
     "#mini-browser-root .mb-resize-bottom::after{content:'';display:block;position:absolute;bottom:5px;left:50%;transform:translateX(-50%);width:44px;height:3px;border-radius:5px;background:#a9977e}",
     "#mini-browser-root.mb-compact .mb-resize-height,#mini-browser-root.mb-compact .mb-resize-bottom{display:none!important}",
     "#mini-browser-root.mb-resizing iframe{pointer-events:none}",
-    "@media(max-width:600px){#mini-browser-root{left:50%;right:auto;top:8px;bottom:auto;transform:translateX(-50%);width:calc(100vw - 16px);height:min(460px,72dvh);max-width:calc(100vw - 16px);max-height:calc(100dvh - 16px);min-width:0;min-height:150px}#mini-browser-root .mb-resize-height{display:none!important}#mini-browser-root .mb-resize-bottom{display:block}#mini-browser-root .mb-resize-width{width:17px}#mini-browser-root .mb-resize-width::after{right:6px}#mini-browser-root .mb-head{padding:3px 4px;gap:2px}#mini-browser-root .mb-title{font-size:12px}}",
+    "@media(max-width:600px){#mini-browser-root{left:50%;right:auto;top:max(56px,env(safe-area-inset-top,0px) + 52px);bottom:auto;transform:translateX(-50%);width:calc(100vw - 16px);height:min(460px,72dvh);max-width:calc(100vw - 16px);max-height:calc(100dvh - 70px);min-width:0;min-height:150px}#mini-browser-root .mb-resize-height{display:none!important}#mini-browser-root .mb-resize-bottom{display:block}#mini-browser-root .mb-resize-width{width:17px}#mini-browser-root .mb-resize-width::after{right:6px}#mini-browser-root .mb-head{padding:3px 4px;gap:2px}#mini-browser-root .mb-title{font-size:12px}}",
     "html:not(.mb-mini-selected) #mini-browser-root,html.mb-mini-selected #mini-browser-root.mb-bar{display:none!important}",
     "html.mb-mini-selected #paths-monkey-root,html.mb-mini-selected #mizuhana-hud,html.mb-mini-selected #mizu-hud-switcher,html.mb-mini-selected #mizuhana-launcher{display:none!important}",
     "#mb-shared-launcher{position:fixed;top:max(8px,env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);z-index:2147483500;display:none;align-items:center;max-width:calc(100vw - 24px);font:14px/1.35 system-ui,sans-serif}",
@@ -95,7 +96,8 @@
   const head=el("div","mb-head");
   const title=el("button","mb-title","Mini Browser");
   title.title="Minimize to the shared HUD button";
-  const libraryBtn=el("button","mb-icon","▦");
+  const libraryBtn=el("button","mb-icon");
+  libraryBtn.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>';
   libraryBtn.title="Mini game library";libraryBtn.setAttribute("aria-label","Open Mini game library");
   const openBtn=el("button","mb-icon","↗");
   openBtn.title="Open current website in another browser tab";
@@ -119,13 +121,20 @@
   nameLabel.append(nameField);settings.append(nameLabel);
   const urlField=inputField("Full webpage URL","https://your-game.example");
   const compactField=inputField("Compact tracker URL (optional)","https://your-game.example/compact");
+  const heightLabel=el("label","","Compact tracker height");
+  const heightField=el("input");heightField.type="range";heightField.min="140";
+  heightField.max="320";heightField.step="10";
+  heightField.value=String(clamp(state.compactHeight||185,140,320));
+  const heightPreview=el("span","mb-note",heightField.value+" px");
+  heightField.addEventListener("input",()=>heightPreview.textContent=heightField.value+" px");
+  heightLabel.append(heightField,heightPreview);settings.append(heightLabel);
   const actions=el("div","mb-actions");
   const add=el("button","","New game");
   const store=el("button","","Save");
   const remove=el("button","","Remove");
   actions.append(add,store,remove);
   settings.append(actions,el("p","mb-note",
-    "☼ Settings saves the Mini homepage URL, game shortcuts, and optional compact tracker pages. Empty compact URL reuses the full page in a shorter view. Data stays in Tampermonkey."));
+    "☼ Settings stores game links, optional per-game compact tracker pages, compact height, and the future homepage URL. If no compact URL is set, Mini shows the game page in a shorter window. Saved locally in Tampermonkey."));
   const widthHandle=el("div","mb-resize-width");
   const heightHandle=el("div","mb-resize-height");
   const bottomHandle=el("div","mb-resize-bottom");
@@ -141,13 +150,15 @@
   document.body.append(root);
 
   const bounds=()=>({
-    width:window.innerWidth<=600?window.innerWidth-16:Math.max(260,Math.min(900,window.innerWidth-24)),
-    height:window.innerWidth<=600?window.innerHeight-16:Math.max(210,window.innerHeight-32)
+    width:window.innerWidth<=600?Math.max(220,window.innerWidth-16):Math.max(260,Math.min(900,window.innerWidth-24)),
+    height:window.innerWidth<=600?Math.max(150,window.innerHeight-76):Math.max(210,window.innerHeight-32)
   });
   function sizeWindow(){
     const b=bounds(),mobile=window.innerWidth<=600;
     root.style.width=clamp(state.windowSize.width,mobile?Math.min(240,b.width):260,b.width)+"px";
-    root.style.height=clamp(state.windowSize.height,150,b.height)+"px";
+    root.style.height=(state.mode==="compact"
+      ?clamp(state.compactHeight||185,140,Math.max(140,b.height))
+      :clamp(state.windowSize.height,150,b.height))+"px";
   }
   let dragging=null;
   for(const [handle,dimension] of [[widthHandle,"width"],[heightHandle,"height"],[bottomHandle,"bottom"]]){
@@ -244,6 +255,8 @@
       nameField.value=site()?.name||"";
       urlField.value=site()?.url||"";
       compactField.value=site()?.compactUrl||"";
+      heightField.value=String(clamp(state.compactHeight||185,140,320));
+      heightPreview.textContent=heightField.value+" px";
       if(state.mode==="bar")state.mode="open";
     }
     render();
@@ -265,6 +278,7 @@
       alert("Enter a game name and valid HTTPS URLs (or localhost).");return;
     }
     state.homeUrl=homeUrl;
+    state.compactHeight=Number(heightField.value);
     if(editing&&state.sites.some(s=>s.id===editing)){
       state.sites=state.sites.map(s=>s.id===editing?{...s,name,url,compactUrl}:s);
       state.selected=editing;
