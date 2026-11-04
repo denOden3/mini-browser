@@ -42,9 +42,25 @@ The repository root now contains **`index.html`**, the first Mini Library homepa
 
 **Hosting:** This source file is committed, but an accessible hosted homepage URL must be established before Mini's iframe can display it. The repository is private, so do not assume that GitHub Pages is available or enabled. When hosted, configure Mini Settings → Mini homepage URL to that verified HTTPS address. For a specific game's compact tracker, use the same origin with `?view=compact&game=the-last-hearth`.
 
+## Mini homepage and game saves (first prototype)
+
+The repository now has **`index.html`**: a responsive, standalone Mini Library homepage. It includes:
+
+- A game library, starting with **The Last Hearth** seeded from the current Day 6 checkpoint.
+- Editable story canon, player/character rules, ongoing scene, NPCs, inventory, treasury and quests.
+- A journal for important story events, plus manually created save points.
+- **Generate Continuation**: build and copy a new-chat prompt from the current saved fields and recent journal entries.
+- Export/import JSON backups to carry saves between devices or browsers.
+- A compact tracker view at **`?view=compact`** for the HUD, with a normal full view at the site root.
+
+**Important limitations:** The prototype stores saves in the site's browser `localStorage`, not Supabase. Clearing site data, using another browser, or having different embedded storage partitions can leave saves inaccessible until a JSON backup is imported. The home page must be deployed to an HTTPS URL before Mini can embed it; opening `index.html` on GitHub shows source, not the live site. Narration does not sync to the website automatically. If hosting publicly, assume the shipped HTML and its seeded story recap are public, even if the GitHub repository is private.
+
+Once the site is hosted, set Mini **Settings → Mini homepage URL** to its HTTPS address, and The Last Hearth's full/compact URLs to the hosted root and `?game=the-last-hearth&view=compact`. An authenticated cloud-save and verified narration event writer are future steps.
+
 ## Files
 
 - `mini-browser.user.js` — universal Tampermonkey HUD
+- `index.html` — Mini Library homepage, local game saves, prompt generator and JSON backups
 - `index.html` — Mini Library homepage and continuation save prototype
 - `examples/last-hearth/index.html` — older **static** Last Hearth tracker demo, not a live database
 
