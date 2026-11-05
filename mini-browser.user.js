@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Mini Browser — Universal Roleplay HUD
 // @namespace    mini-browser.chat-rpg
-// @version      0.4.0
-// @description  Universal mini game tracker with shared HUD picker and resizable website panel.
+// @version      0.5.0
+// @description  Mini Library: game shelves, customized trackers and personal themes.
 // @updateURL    https://github.com/denOden3/mini-browser/raw/main/mini-browser.user.js
 // @downloadURL  https://github.com/denOden3/mini-browser/raw/main/mini-browser.user.js
 // @match        https://chatgpt.com/*
@@ -61,6 +61,9 @@
     }catch(_){return {...defaults};}
   }
   let state=read();
+  // Start the redesigned library in its shelf view without erasing older saves.
+  if(!state.miniLibraryV5){state.view="library";state.miniLibraryV5=true;}
+  state.theme=["parchment","forest","rose","midnight","lilac"].includes(state.theme)?state.theme:"parchment";
   // Migrate existing installations non-destructively: fill missing Mini/Last Hearth
   // links, but leave custom game links and other saved preferences intact.
   if (!state.homeUrl) state.homeUrl=MINI_HOME;
@@ -150,14 +153,46 @@
     "#mb-shared-launcher .mb-menu{position:absolute;top:calc(100% + 7px);left:50%;transform:translateX(-50%);min-width:min(285px,calc(100vw - 24px));padding:7px;border:1px solid #ad8085;border-radius:13px;background:#302431;box-shadow:0 8px 25px #000b;display:grid;gap:5px}",
     "#mb-shared-launcher .mb-menu[hidden]{display:none!important}",
     "#mb-shared-launcher .mb-menu button{width:100%;padding:11px 12px;border:1px solid #81616c;border-radius:9px;background:#40313e;color:#fff3e6;text-align:left;font:700 16px/1.35 system-ui,sans-serif;cursor:pointer}",
-    "#mb-shared-launcher .mb-menu button:disabled{opacity:.5;cursor:not-allowed}"
+    "#mb-shared-launcher .mb-menu button:disabled{opacity:.5;cursor:not-allowed}",
+
+    "#mini-browser-root .mb-setting-section{padding:12px;background:var(--mb-surface,#fffdfa);border:1px solid var(--mb-border,#ded3c4);border-radius:10px}",
+    "#mini-browser-root .mb-setting-section h3{margin:0 0 10px;font-size:14px}",
+    "#mini-browser-root .mb-setting-row{display:flex;align-items:center;gap:8px;justify-content:space-between}",
+    "#mini-browser-root .mb-setting-row button{border:0;background:transparent;color:inherit;font-weight:700;padding:7px 4px}",
+    "#mini-browser-root .mb-setting-row .mb-setting-open{border:1px solid var(--mb-border,#bbb);border-radius:7px;background:var(--mb-accent,#594a39);color:var(--mb-onaccent,#fff);padding:7px 12px;white-space:nowrap}",
+    "#mini-browser-root .mb-setting-body[hidden]{display:none!important}",
+    "#mini-browser-root .mb-setting-body{padding-top:8px}",
+    "#mini-browser-root .mb-setting-small{border:1px solid var(--mb-border,#bbb);border-radius:7px;background:var(--mb-accent,#594a39);color:var(--mb-onaccent,#fff);padding:8px 10px}",
+    "#mini-browser-root .mb-settings select{width:100%;min-width:0;padding:9px;border:1px solid var(--mb-border,#b7a994);border-radius:7px;background:var(--mb-surface,#fff);color:var(--mb-text,#29241f)}",
+    "#mini-browser-root .mb-settings h2{font:700 19px Georgia,serif;margin:0}",
+    "#mini-browser-root .mb-settings .mb-actions button{flex:1;min-width:66px}",
+    "#mini-browser-root .mb-theme-swatches{display:flex;gap:11px;flex-wrap:wrap;margin:12px 0}",
+    "#mini-browser-root .mb-theme-swatch{width:39px;height:39px;border-radius:999px;border:2px solid #ffffff99;box-shadow:0 0 0 1px #756d62;position:relative;display:grid;place-items:center}",
+    "#mini-browser-root .mb-theme-swatch[aria-pressed=true]{box-shadow:0 0 0 3px var(--mb-accent,#594a39)}",
+    "#mini-browser-root .mb-theme-swatch[aria-pressed=true]::after{content:'✓';font-size:17px;color:var(--mb-accent,#594a39);text-shadow:0 1px white;font-weight:900}",
+    "#mini-browser-root{--mb-bg:#faf7f0;--mb-head:#e9dfcf;--mb-surface:#fffdfa;--mb-text:#302a24;--mb-muted:#756859;--mb-accent:#594a39;--mb-onaccent:#fff;--mb-border:#d5c7b3}",
+    "#mini-browser-root.mb-theme-forest{--mb-bg:#f1f8f0;--mb-head:#cee2d1;--mb-surface:#fff;--mb-text:#273c30;--mb-muted:#58715d;--mb-accent:#315a40;--mb-border:#aec9b4}",
+    "#mini-browser-root.mb-theme-rose{--mb-bg:#fff8f8;--mb-head:#efd4da;--mb-surface:#fffdfd;--mb-text:#512f40;--mb-muted:#876075;--mb-accent:#85526b;--mb-border:#e4c1ca}",
+    "#mini-browser-root.mb-theme-midnight{--mb-bg:#1f2632;--mb-head:#303c50;--mb-surface:#293243;--mb-text:#f4f0e9;--mb-muted:#c1c9d2;--mb-accent:#667ca1;--mb-border:#546276}",
+    "#mini-browser-root.mb-theme-lilac{--mb-bg:#faf7ff;--mb-head:#e3d9f2;--mb-surface:#fff;--mb-text:#3d3152;--mb-muted:#776587;--mb-accent:#675180;--mb-border:#d1c1e0}",
+    "#mini-browser-root[class*=mb-theme-]{background:var(--mb-bg);color:var(--mb-text);border-color:var(--mb-border)}",
+    "#mini-browser-root[class*=mb-theme-] .mb-head{background:var(--mb-head);border-color:var(--mb-border);color:var(--mb-text)}",
+    "#mini-browser-root[class*=mb-theme-] .mb-native,#mini-browser-root[class*=mb-theme-] .mb-settings{background:var(--mb-bg);color:var(--mb-text)}",
+    "#mini-browser-root[class*=mb-theme-] .mb-native p,#mini-browser-root[class*=mb-theme-] .mb-note,#mini-browser-root[class*=mb-theme-] .mb-native .mb-muted{color:var(--mb-muted)}",
+    "#mini-browser-root[class*=mb-theme-] .mb-native .mb-game,#mini-browser-root[class*=mb-theme-] .mb-native .mb-widget,#mini-browser-root[class*=mb-theme-] .mb-setting-section{background:var(--mb-surface);border-color:var(--mb-border);color:var(--mb-text)}",
+    "#mini-browser-root[class*=mb-theme-] .mb-settings input,#mini-browser-root[class*=mb-theme-] .mb-settings select{background:var(--mb-surface);color:var(--mb-text);border-color:var(--mb-border)}",
+    "#mini-browser-root[class*=mb-theme-] .mb-native .mb-nav button{background:var(--mb-surface);color:var(--mb-text);border-color:var(--mb-border)}",
+    "#mini-browser-root[class*=mb-theme-] .mb-native .mb-nav button[aria-selected=true],#mini-browser-root[class*=mb-theme-] .mb-settings .mb-actions button{background:var(--mb-accent);color:var(--mb-onaccent);border-color:var(--mb-accent)}",
+    "#mini-browser-root[class*=mb-theme-] .mb-native .mb-stat{background:var(--mb-head)}",
+    "#mini-browser-root[class*=mb-theme-] .mb-native .mb-stat b,#mini-browser-root[class*=mb-theme-] .mb-native h2,#mini-browser-root[class*=mb-theme-] .mb-native .mb-widget h3{color:var(--mb-text)}",
+    "#mini-browser-root[class*=mb-theme-] .mb-native .mb-link{background:var(--mb-accent);color:var(--mb-onaccent);border-color:var(--mb-accent)}"
   ];
   document.head.append(Object.assign(el("style"),{textContent:styles.join("\n")}));
 
   const root=el("section");root.id="mini-browser-root";
-  root.setAttribute("aria-label","Mini Browser HUD");
+  root.setAttribute("aria-label","Mini Library HUD");
   const head=el("div","mb-head");
-  const title=el("button","mb-title","Mini Browser");
+  const title=el("button","mb-title","Mini Library");
   title.title="Minimize to the shared HUD button";
   const libraryBtn=el("button","mb-icon");
   libraryBtn.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>';
@@ -173,31 +208,114 @@
   head.append(title,libraryBtn,openBtn,compactBtn,fullBtn,settingsBtn);
   const content=el("div","mb-content");
   const settings=el("div","mb-settings");
-  function inputField(text,placeholder){
-    const label=el("label","",text);
-    const input=el("input");input.type="url";input.placeholder=placeholder;
-    label.append(input);settings.append(label);return input;
+  const settingsTitle=el("h2","","Mini Library Settings");
+  const settingsHome=el("section","mb-setting-section");
+  const homeHead=el("div","mb-setting-row");
+  const homeToggle=el("button","mb-setting-toggle","▸ Mini Homepage");
+  homeToggle.type="button";homeToggle.setAttribute("aria-expanded","false");
+  const homeOpen=el("button","mb-setting-open","↗ Open");
+  homeOpen.type="button";homeOpen.title="Open the Mini Library homepage in a new tab";
+  homeHead.append(homeToggle,homeOpen);
+  const homeBody=el("div","mb-setting-body");homeBody.hidden=true;
+  const homeLabel=el("label","","Homepage website URL");
+  const homeField=el("input");homeField.type="url";
+  homeField.placeholder="https://denoden3.github.io/mini-browser/";
+  homeLabel.append(homeField);
+  const homeSave=el("button","mb-setting-small","Save homepage link");
+  homeSave.type="button";
+  homeBody.append(homeLabel,homeSave,
+    el("p","mb-note","Used by the ↗ arrow when you are viewing the game library."));
+  settingsHome.append(homeHead,homeBody);
+  let homeExpanded=false;
+  function setHomeExpanded(value){
+    homeExpanded=!!value;homeBody.hidden=!homeExpanded;
+    homeToggle.textContent=(homeExpanded?"▾ ":"▸ ")+"Mini Homepage";
+    homeToggle.setAttribute("aria-expanded",String(homeExpanded));
   }
-  const homeField=inputField("Mini homepage URL (future website)","https://mini-home.example");
-  const nameLabel=el("label","","Game name");
-  const nameField=el("input");nameField.placeholder="The Last Hearth";
-  nameLabel.append(nameField);settings.append(nameLabel);
-  const urlField=inputField("Full webpage URL","https://your-game.example");
-  const compactField=inputField("Compact tracker URL (optional)","https://your-game.example/compact");
+  homeToggle.onclick=()=>setHomeExpanded(!homeExpanded);
+  homeOpen.onclick=()=>window.open(valid(homeField.value.trim())?homeField.value.trim():MINI_HOME,
+    "_blank","noopener,noreferrer");
+  homeSave.onclick=()=>{
+    const value=homeField.value.trim();
+    if(!valid(value)){alert("Please enter a valid HTTPS homepage URL.");return;}
+    state.homeUrl=value;save();homeSave.textContent="✓ Saved";
+    setTimeout(()=>homeSave.textContent="Save homepage link",1200);
+  };
+
+  const manager=el("section","mb-setting-section");
+  manager.append(el("h3","","Game Manager"));
+  const managerLabel=el("label","","Choose a saved game");
+  const managerSelect=el("select","mb-manager-select");
+  managerSelect.setAttribute("aria-label","Select a saved Mini Library game");
+  managerLabel.append(managerSelect);
+  const managerActions=el("div","mb-actions");
+  const managerAdd=el("button","","Add");
+  const managerEdit=el("button","","Edit");
+  const managerRemove=el("button","","Remove");
+  managerActions.append(managerAdd,managerEdit,managerRemove);
+  manager.append(managerLabel,managerActions,el("p","mb-note",
+    "Game saves and custom tracker menus live on the Mini website. These buttons open the corresponding website manager; Mini displays your changes after they are saved and synced."));
+  function managerLink(action,id){
+    return MINI_HOME+"?action="+encodeURIComponent(action)+
+      (id?"&game="+encodeURIComponent(id):"");
+  }
+  const launchManager=(action,id)=>window.open(managerLink(action,id),"_blank","noopener,noreferrer");
+  managerAdd.onclick=()=>launchManager("new");
+  managerEdit.onclick=()=>{if(managerSelect.value)launchManager("edit",managerSelect.value);};
+  managerRemove.onclick=()=>{if(managerSelect.value)launchManager("remove",managerSelect.value);};
+  managerSelect.onchange=()=>{
+    managerEdit.disabled=!managerSelect.value;
+    managerRemove.disabled=!managerSelect.value;
+  };
+  function refreshManager(){
+    const previous=managerSelect.value||selectedGame()?.id;
+    managerSelect.replaceChildren();
+    for(const game of games()){
+      const item=el("option","",safeText(game.title)||"Unnamed game");
+      item.value=game.id;managerSelect.append(item);
+    }
+    managerSelect.value=games().some(g=>g.id===previous)?previous:(games()[0]?.id||"");
+    managerEdit.disabled=!managerSelect.value;managerRemove.disabled=!managerSelect.value;
+    if(!games().length){
+      const option=el("option","","No synced games yet");
+      option.value="";managerSelect.append(option);
+      managerSelect.value="";
+    }
+  }
+
+  const appearance=el("section","mb-setting-section");
+  appearance.append(el("h3","","Mini HUD Themes"));
+  const swatches=el("div","mb-theme-swatches");
+  const themes=[
+    ["parchment","Parchment","#eadfcf"],
+    ["forest","Forest","#c9decd"],
+    ["rose","Rose","#edccd4"],
+    ["midnight","Midnight","#283143"],
+    ["lilac","Lilac","#ddd0ed"]
+  ];
+  const swatchButtons=[];
+  for(const [id,label,color] of themes){
+    const choice=el("button","mb-theme-swatch");
+    choice.type="button";choice.title=label;
+    choice.setAttribute("aria-label","Use "+label+" theme");
+    choice.style.background=color;
+    choice.onclick=()=>{state.theme=id;save();render();};
+    swatches.append(choice);swatchButtons.push([id,choice]);
+  }
+  appearance.append(swatches);
   const heightLabel=el("label","","Compact tracker height");
   const heightField=el("input");heightField.type="range";heightField.min="140";
   heightField.max="320";heightField.step="10";
   heightField.value=String(clamp(state.compactHeight||185,140,320));
   const heightPreview=el("span","mb-note",heightField.value+" px");
-  heightField.addEventListener("input",()=>heightPreview.textContent=heightField.value+" px");
-  heightLabel.append(heightField,heightPreview);settings.append(heightLabel);
-  const actions=el("div","mb-actions");
-  const add=el("button","","New game");
-  const store=el("button","","Save & open library");
-  const remove=el("button","","Remove");
-  actions.append(add,store,remove);
-  settings.append(actions,el("p","mb-note",
-    "☼ Settings stores game links, optional per-game compact tracker pages, compact height, and the future homepage URL. If no compact URL is set, Mini shows the game page in a shorter window. Saved locally in Tampermonkey."));
+  heightField.addEventListener("input",()=>{
+    heightPreview.textContent=heightField.value+" px";
+    state.compactHeight=Number(heightField.value);save();
+    if(state.mode==="compact")sizeWindow();
+  });
+  heightLabel.append(heightField,heightPreview);
+  appearance.append(el("p","mb-note","Choose the look of Mini's window, then adjust how tall its compact tracker appears."),heightLabel);
+  settings.append(settingsTitle,settingsHome,manager,appearance);
   const widthHandle=el("div","mb-resize-width");
   const heightHandle=el("div","mb-resize-height");
   const bottomHandle=el("div","mb-resize-bottom");
@@ -305,7 +423,7 @@
     if(!embedCheck||event.source!==embedCheck.frame.contentWindow)return;
     embedCheck.ready=true;
   });
-  let settingsVisible=false,editing=state.selected;
+  let settingsVisible=false;
 
   // Each game owns its own HUD menu configuration, edited on the Mini website.
   // Mini only knows generic rendering primitives. Nothing here is inn-specific.
