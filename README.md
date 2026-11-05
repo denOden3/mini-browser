@@ -1,6 +1,22 @@
-# Mini Browser 🎲
+# Mini Library 🎲
 
 A universal, lightweight companion for chat-first roleplaying games. Mini now renders game-configured native panels rather than relying on iframe embedding. The separate Mini Library website is the game-save editor. The specialized Mizuhana and Paths to Immortality HUDs remain independent.
+
+## v0.5.0 — Mini Library shelf and Settings redesign
+
+The HUD is now called **Mini Library** in its title, shared launcher, and game menu. The GitHub repository stays at `mini-browser` and the userscript's legacy metadata name remains unchanged for in-place Tampermonkey updates.
+
+**HUD main screen:** A native Games Library populated from game saves on the Mini website, copied by the same-browser Tampermonkey bridge. Selecting a game opens that game's configured tracker menus; the settings do not impose a fixed set of inn-management tabs.
+
+**HUD Settings** follows the notebook sketch:
+
+- **Mini Homepage**: a collapsed/expandable row with a separate **Open** button, URL field and **Save homepage link** action.
+- **Game Manager**: select a synced game, then **Add**, **Edit** or **Remove**. These launch the corresponding Mini website pages. Add asks for a new game name; Edit opens the game's save editor; Remove asks for confirmation on the website before deleting its local save. The website remains the authority, rather than allowing two divergent game registries.
+- **Mini HUD Themes**: Parchment, Forest, Rose, Midnight or Lilac. Selection is stored in Tampermonkey for that browser. Compact tracker height can still be adjusted.
+
+To test Game Manager actions, first open `https://denoden3.github.io/mini-browser/` once in the **same browser profile** that runs Mini's userscript, then return to ChatGPT. Updates saved on that website are copied to the Mini HUD when the companion script is active. The game manager opens ordinary tabs because the external site cannot be reliably embedded in ChatGPT.
+
+**No cloud sync yet.** The site's save data is browser-local, and Mini cannot automatically read all ChatGPT narration. Back up important games as JSON. Do not upload full copyrighted books into this public GitHub repository; a future private Bookshelf could instead store your notes, reading progress and personal links without exposing book files.
 
 ## v0.4.0 — Native, game-defined HUD menus
 
