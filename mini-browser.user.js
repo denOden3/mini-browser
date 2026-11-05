@@ -658,7 +658,9 @@
   }
   function render(){
     state.mode=["open","compact","bar"].includes(state.mode)?state.mode:"open";
-    root.className=state.mode==="bar"?"mb-bar":state.mode==="compact"?"mb-compact":"mb-open";
+    root.className=(state.mode==="bar"?"mb-bar":state.mode==="compact"?"mb-compact":"mb-open")+
+      " mb-theme-"+state.theme;
+    for(const [id,button] of swatchButtons)button.setAttribute("aria-pressed",String(id===state.theme));
     sizeWindow();
     libraryBtn.setAttribute("aria-pressed",String(state.view==="library"));
     compactBtn.setAttribute("aria-pressed",String(state.mode==="compact"));
@@ -672,11 +674,8 @@
     settings.style.display=visible?"flex":"none";
     content.style.display=visible?"none":"block";
     if(visible){
-      editing=state.selected;
       homeField.value=state.homeUrl;
-      nameField.value=site()?.name||"";
-      urlField.value=site()?.url||"";
-      compactField.value=site()?.compactUrl||"";
+      refreshManager();
       heightField.value=String(clamp(state.compactHeight||185,140,320));
       heightPreview.textContent=heightField.value+" px";
       if(state.mode==="bar")state.mode="open";
@@ -692,34 +691,10 @@
   fullBtn.onclick=()=>{showSettings(false);state.mode="open";save();render();};
   openBtn.onclick=()=>{const url=activeUrl();if(url)window.open(url,"_blank","noopener,noreferrer");};
   settingsBtn.onclick=()=>showSettings(!settingsVisible);
-  add.onclick=()=>{editing=null;nameField.value="";urlField.value="";compactField.value="";nameField.focus();};
-  store.onclick=()=>{
-    const name=nameField.value.trim(),url=urlField.value.trim(),
-      compactUrl=compactField.value.trim(),homeUrl=homeField.value.trim();
-    if(!name||[url,compactUrl,homeUrl].some(v=>v&&!valid(v))){
-      alert("Enter a game name and valid HTTPS URLs (or localhost).");return;
-    }
-    state.homeUrl=homeUrl;
-    state.compactHeight=Number(heightField.value);
-    if(editing&&state.sites.some(s=>s.id===editing)){
-      state.sites=state.sites.map(s=>s.id===editing?{...s,name,url,compactUrl}:s);
-      state.selected=editing;
-    }else{
-      const id="site-"+Date.now();state.sites.push({id,name,url,compactUrl});state.selected=id;
-    }
-    state.view="library";
-    save();showSettings(false);
-  };
-  remove.onclick=()=>{
-    if(!editing||!confirm("Remove this saved game?"))return;
-    state.sites=state.sites.filter(s=>s.id!==editing);
-    state.selected=state.sites[0]?.id||null;
-    save();showSettings(false);
-  };
 
   // Shared selector: add Mini to existing HUD menus, without editing PTI or Mizuhana.
   const switcher=el("div");switcher.id="mb-shared-launcher";
-  const pill=el("button","mb-pill","◈ Mini Browser");
+  const pill=el("button","mb-pill","◈ Mini Library");
   pill.setAttribute("aria-haspopup","menu");pill.setAttribute("aria-expanded","false");
   pill.title="Click to open Mini; long-press to choose a HUD";
   const menu=el("div","mb-menu");menu.hidden=true;menu.setAttribute("role","menu");
@@ -729,7 +704,7 @@
     if(document.getElementById("paths-monkey-root")?.classList.contains("pm-expanded"))
       document.getElementById("pm-collapse-title")?.click();
     document.getElementById("mizu-brand-collapse")?.click();
-    state.miniSelected=true;state.mode="open";hideMenu();save();render();
+    state.miniSelected=true;state.mode="open";state.view="library";hideMenu();save();render();
   }
   function switchHud(id){
     hideMenu();state.miniSelected=false;state.mode="bar";save();syncIntegration();
@@ -744,7 +719,7 @@
   function showMenu(){
     menu.replaceChildren();
     for(const [label,action,enabled] of [
-      ["◈ Mini Browser",activateMini,true],
+      ["◈ Mini Library",activateMini,true],
       ["☯ Paths of Immortality",()=>switchHud("paths"),!!document.getElementById("pm-select-paths")],
       ["🌺 Mizuhana",()=>switchHud("mizuhana"),
         !!document.querySelector("#mizuhana-hud,#mizuhana-launcher,#mizu-hud-switcher")]
@@ -775,7 +750,7 @@
   function inject(menuId,className){
     const target=document.getElementById(menuId);
     if(!target||target.querySelector("[data-mini-browser-option]"))return;
-    const btn=el("button",className,"◈ Mini Browser");
+    const btn=el("button",className,"◈ Mini Library");
     btn.type="button";btn.setAttribute("role","menuitem");
     btn.setAttribute("data-mini-browser-option","true");
     btn.onclick=e=>{e.preventDefault();e.stopPropagation();activateMini();};
