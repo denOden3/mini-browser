@@ -593,14 +593,20 @@
     GM_addValueChangeListener(BRIDGE_KEY,()=>{
       nativeState.lastRaw="";
       readSaves();
-      if(state.miniSelected&&!settingsVisible)render();
+      if(state.miniSelected){
+        if(settingsVisible)refreshManager();
+        else render();
+      }
     });
   }
   document.addEventListener("visibilitychange",()=>{
     if(document.visibilityState==="visible"){
       nativeState.lastRaw="";
       readSaves();
-      if(state.miniSelected&&!settingsVisible)render();
+      if(state.miniSelected){
+        if(settingsVisible)refreshManager();
+        else render();
+      }
     }
   });
 
