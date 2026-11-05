@@ -445,6 +445,16 @@ function createGame(){
   name=name.trim()||"New Adventure";
   var g=normalizeHudGame(emptyGame(name));db.games.push(g);active=g.id;persist();view="game";render();
 }
+function removeGameById(gameId){
+  var index=db.games.findIndex(function(g){return g.id===gameId;});
+  if(index<0){showNotice("Game not found. No data was removed.");return;}
+  var name=db.games[index].title||"this game";
+  if(!confirm("Remove "+name+" from Mini Library? This deletes its current local save. Export a JSON backup first if you may want it back."))return;
+  db.games.splice(index,1);
+  active=db.games[0]?.id||null;
+  db.snapshots=(db.snapshots||[]).filter(function(item){return item.gameId!==gameId;});
+  persist();view="library";render();showNotice(name+" was removed from this browser's Mini Library.");
+}
 function downloadJSON(payload,filename){
   var blob=new Blob([JSON.stringify(payload,null,2)],{type:"application/json"});
   var url=URL.createObjectURL(blob),a=document.createElement("a");
@@ -544,6 +554,22 @@ function render(){
   main.append(el("footer","foot","Mini Library · Static offline-first prototype · No automatic ChatGPT synchronization yet"));
 }
 persist();render();
+// Native HUD's Game Manager links here to ensure the website remains the
+// source of truth. Its Tampermonkey companion syncs saved changes back to Mini.
+if(!compact&&params.has("action")){
+  var intent=params.get("action"),target=params.get("game");
+  try{history.replaceState(null,"",location.pathname);}catch(_){}
+  if(intent==="new")createGame();
+  else if(intent==="edit"){
+    if(target&&db.games.some(function(g){return g.id===target;})){
+      selectGame(target,"game");
+    }else showNotice("That game isn't available in this browser's library.");
+  }else if(intent==="remove"){
+    if(target&&db.games.some(function(g){return g.id===target;})){
+      removeGameById(target);
+    }else showNotice("That game isn't available in this browser's library.");
+  }
+}
 })();
 </script>
 <!-- Mini HUD readiness handshake: sends no story data or credentials. -->
